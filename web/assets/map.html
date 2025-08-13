@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Kakao Map</title>
+    <style>
+        html, body { 
+            width: 100%; 
+            height: 100%; 
+            margin: 0; 
+            padding: 0; 
+            overflow: hidden;
+        }
+        #map { 
+            width: 100%; 
+            height: 100%; 
+            background-color: #f0f0f0;
+        }
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #666;
+            font-family: Arial, sans-serif;
+        }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin-right: 15px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .error {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        .error h2 {
+            margin: 0 0 20px 0;
+            font-size: 24px;
+        }
+        .error p {
+            margin: 0 0 20px 0;
+            font-size: 16px;
+            opacity: 0.8;
+        }
+        .error button {
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div id="map">
+        <div class="loading">
+            <div class="spinner"></div>
+            <span>카카오 지도를 불러오는 중...</span>
+        </div>
+    </div>
+    
+    <script>
+        console.log('🚀 Starting Kakao Map initialization...');
+        
+        var map;
+        var markers = [];
+        var loadAttempts = 0;
+        var maxAttempts = 3;
+        
+        // 카카오 지도 SDK 로드
+        function loadKakaoMap() {
+            loadAttempts++;
+            console.log(`📥 Loading Kakao Map SDK (attempt ${loadAttempts}/${maxAttempts})...`);
+            
+            var script = document.createElement('script');
+            script.src = 'https://dapi.kakao.com/v2/maps/sdk.js?appkey=e0117f46506498cc3e0e2032f3a515e3&libraries=services';
+            script.onload = function() {
+                console.log('✅ Kakao Map SDK loaded successfully');
+                
+                // SDK 로드 완료 후 지도 초기화
+                if (window.kakao && window.kakao.maps) {
+                    kakao.maps.load(function() {
+                        console.log('✅ Kakao Maps API ready');
+                        initMap();
+                    });
+                } else {
+                    console.error('❌ Kakao API not available after script load');
+                    showError();
+                }
+            };
+            
+            script.onerror = function() {
+                console.error(`❌ Failed to load Kakao Map SDK (attempt ${loadAttempts})`);
+                
+                if (loadAttempts < maxAttempts) {
+                    console.log(`🔄 Retrying... (${loadAttempts + 1}/${maxAttempts})`);
+                    setTimeout(loadKakaoMap, 2000); // 2초 후 재시도
+                } else {
+                    console.error('❌ Max attempts reached, showing error');
+                    showError();
+                }
+            };
+            
+            document.head.appendChild(script);
+        }
+        
+        function initMap() {
+            try {
+                console.log('🗺️ Initializing map...');
+                
+                var mapContainer = document.getElementById('map');
+                mapContainer.innerHTML = ''; // 로딩 화면 제거
+                
+                var options = {
+                    center: new kakao.maps.LatLng(37.5665, 126.9780), // 서울 시청
+                    level: 8
+                };
+                
+                map = new kakao.maps.Map(mapContainer, options);
+                console.log('✅ Map created successfully');
+                
+                // 줌 컨트롤 추가
+                var zoomControl = new kakao.maps.ZoomControl();
+                map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
+                console.log('✅ Zoom control added');
+                
+                // 지도 로드 완료 이벤트
+                kakao.maps.event.addListener(map, 'tilesloaded', function() {
+                    console.log('🎉 Map tiles loaded!');
+                    // 부모에게 지도 준비 완료 알림
+                    if (window.parent) {
+                        window.parent.postMessage('mapReady', '*');
+                    }
+                });
+                
+                // 에러 발생 시
+                kakao.maps.event.addListener(map, 'error', function() {
+                    console.error('❌ Map error occurred');
+                    showError();
+                });
+                
+            } catch (e) {
+                console.error('❌ Error initializing map:', e);
+                showError();
+            }
+        }
+        
+        function showError() {
+            var mapContainer = document.getElementById('map');
+            mapContainer.innerHTML = `
+                <div class="error">
+                    <h2>🗺️ 지도</h2>
+                    <p>
+                        카카오 지도를 불러올 수 없습니다.<br>
+                        잠시 후 다시 시도해주세요.
+                    </p>
+                    <button onclick="retryLoad()">다시 시도</button>
+                </div>
+            `;
+        }
+        
+        function retryLoad() {
+            console.log('🔄 Retrying map load...');
+            loadAttempts = 0;
+            var mapContainer = document.getElementById('map');
+            mapContainer.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <span>카카오 지도를 불러오는 중...</span>
+                </div>
+            `;
+            loadKakaoMap();
+        }
+        
+        // 부모로부터 메시지 수신
+        window.addEventListener('message', function(event) {
+            console.log('📨 Received message:', event.data);
+            
+            if (event.data === 'mapReady') {
+                console.log('✅ Map ready message received');
+            }
+        });
+        
+        // 15초 후 타임아웃
+        setTimeout(function() {
+            var mapContainer = document.getElementById('map');
+            if (mapContainer.querySelector('.loading')) {
+                console.log('⏰ Loading timeout, showing error');
+                showError();
+            }
+        }, 15000);
+        
+        // 지도 로드 시작
+        loadKakaoMap();
+    </script>
+</body>
+</html>
