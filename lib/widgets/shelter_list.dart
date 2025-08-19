@@ -24,6 +24,141 @@ class ShelterList extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 온도/습도 섹션
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // "현재 위치의" 텍스트
+              Text(
+                '현재 위치의',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey[700],
+                ),
+              ),
+              const SizedBox(height: 12),
+              // 온도/습도 컨테이너
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.grey[200]!,
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    // 온도 컨테이너
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.orange[200]!,
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.03),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.thermostat,
+                              color: Colors.orange[600],
+                              size: 28,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '23°C',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.orange[600],
+                              ),
+                            ),
+                            Text(
+                              '온도',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.orange[700],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    
+                    const SizedBox(width: 12),
+                    
+                    // 습도 컨테이너
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.blue[200]!,
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.03),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.water_drop,
+                              color: Colors.blue[600],
+                              size: 28,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '65%',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue[600],
+                              ),
+                            ),
+                            Text(
+                              '습도',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.blue[700],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 24),
+          
           // 제목
           const Text(
             'AI 추천 쉼터',
