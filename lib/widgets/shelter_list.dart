@@ -30,12 +30,12 @@ class ShelterList extends StatelessWidget {
             children: [
               // "현재 위치의" 텍스트
               Text(
-                '현재 위치의',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey[700],
-                ),
+                '현재 대구는',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
               ),
               const SizedBox(height: 12),
               // 온도/습도 컨테이너
