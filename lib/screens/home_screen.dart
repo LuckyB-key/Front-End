@@ -40,14 +40,14 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           // 상단 바
           TopBar(),
-          
+
           // 메인 콘텐츠
           Expanded(
             child: Row(
               children: [
                 // 왼쪽 사이드바
                 Sidebar(),
-                
+
                 // 메인 콘텐츠 영역
                 Expanded(
                   child: Row(
@@ -59,7 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           onShelterSelected: _onShelterSelected,
                         ),
                       ),
-                      
+
                       // 지도 섹션
                       Expanded(
                         flex: 2,
