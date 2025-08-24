@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../models/shelter.dart';
+import '../services/shelter_service.dart';
 
 class ShelterProvider with ChangeNotifier {
   List<Shelter> _shelters = [];
@@ -159,6 +160,16 @@ class ShelterProvider with ChangeNotifier {
         longitude: shelter.longitude,
       );
       _applyFilters();
+    }
+  }
+
+  Future<void> fetchShelters() async {
+    try {
+      final response = await ShelterService.getShelters();
+      // 응답 처리 로직
+      notifyListeners();
+    } catch (e) {
+      // 에러 처리
     }
   }
 }
