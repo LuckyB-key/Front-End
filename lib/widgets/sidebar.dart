@@ -47,7 +47,7 @@ class _SidebarState extends State<Sidebar> {
           // 알림/공지사항
           _buildNavItem(
             context: context,
-            icon: Icons.psychology,
+            icon: Icons.notifications_active,
             title: '알림/공지사항',
             subtitle: '이용시간 제한 알림 and 각종 공지',
             isSelected: selectedIndex == 1,
