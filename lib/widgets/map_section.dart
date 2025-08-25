@@ -4,6 +4,7 @@ import '../providers/shelter_provider.dart';
 import '../providers/review_provider.dart';
 import '../models/shelter.dart';
 import '../models/review.dart';
+import '../services/review_service.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
@@ -286,7 +287,7 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
                   children: [
                     Icon(
                       Icons.rate_review,
-                      color: Colors.blue[600],
+                      color: Colors.green[600],
                       size: 24,
                     ),
                     const SizedBox(width: 12),
@@ -465,7 +466,7 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
                       style: TextStyle(color: Colors.white),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue[600],
+                      backgroundColor: Colors.green[600],
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
@@ -484,7 +485,9 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
   // 리뷰 작성 다이얼로그
   void _showReviewWriteDialog() {
     final TextEditingController textController = TextEditingController();
+    final TextEditingController nicknameController = TextEditingController();
     int selectedRating = 5;
+    bool isSubmitting = false;
     
     showDialog(
       context: context,
@@ -495,6 +498,19 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text('이 쉼터에 대한 리뷰를 작성해주세요.'),
+              const SizedBox(height: 16),
+              
+              // 사용자 닉네임 입력
+              TextField(
+                controller: nicknameController,
+                decoration: const InputDecoration(
+                  labelText: '닉네임',
+                  hintText: '닉네임을 입력해주세요',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.person),
+                ),
+              ),
+              
               const SizedBox(height: 16),
               
               // 별점 선택
@@ -538,12 +554,28 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
               onPressed: () => Navigator.of(context).pop(),
               child: const Text('취소'),
             ),
-            ElevatedButton(
-              onPressed: () {
+                        ElevatedButton(
+              onPressed: isSubmitting ? null : () async {
                 final text = textController.text.trim();
+                final nickname = nicknameController.text.trim();
+                
+                if (nickname.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('닉네임을 입력해주세요.'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                  return;
+                }
+                
                 if (text.isNotEmpty) {
+                  setState(() {
+                    isSubmitting = true;
+                  });
+                  
                   Navigator.of(context).pop();
-                  _submitReview(text, selectedRating);
+                  await _submitReview(text, selectedRating, nickname);
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -553,8 +585,21 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
                   );
                 }
               },
-              child: const Text('작성'),
-                        ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green[600],
+                foregroundColor: Colors.white,
+              ),
+              child: isSubmitting 
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Text('작성'),
+            ),
                       ],
                     ),
                   ),
@@ -562,27 +607,34 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
   }
 
   // 리뷰 제출
-  Future<void> _submitReview(String text, int rating) async {
+  Future<void> _submitReview(String text, int rating, String nickname) async {
     try {
       final reviewData = {
+        'userId': 'user123', // 실제로는 로그인된 사용자 ID를 사용해야 함
         'text': text,
         'rating': rating,
         'photoUrls': [], // 사진 기능은 나중에 추가
+        'userNickname': nickname, // 사용자가 입력한 닉네임
       };
       
-      // TODO: 실제 API 호출
-      // await ReviewService.createReview(_localSelectedShelter!.id, reviewData);
+      // 실제 API 호출
+      final response = await ReviewService.createReview(_localSelectedShelter!.id, reviewData);
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${_localSelectedShelter!.name}에 리뷰를 작성했습니다!'),
-          backgroundColor: Colors.green[600],
-          duration: const Duration(seconds: 2),
-        ),
-      );
-      
-      // 리뷰 목록 새로고침
-      context.read<ReviewProvider>().fetchReviews(_localSelectedShelter!.id);
+      // 응답 확인
+      if (response['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${_localSelectedShelter!.name}에 리뷰를 작성했습니다!'),
+            backgroundColor: Colors.green[600],
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        
+        // 리뷰 목록 새로고침
+        context.read<ReviewProvider>().fetchReviews(_localSelectedShelter!.id);
+      } else {
+        throw Exception('리뷰 작성에 실패했습니다.');
+      }
       
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -988,20 +1040,20 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
                                           },
                                           icon: Icon(
                                             Icons.rate_review,
-                                            color: Colors.blue[600],
+                                            color: Colors.green[600],
                                             size: 16,
                                           ),
                                           label: Text(
                                             '리뷰',
                                               style: TextStyle(
-                                              color: Colors.blue[600],
+                                              color: Colors.green[600],
                                               fontWeight: FontWeight.w600,
                                                 fontSize: 12,
                                             ),
                                           ),
                                           style: OutlinedButton.styleFrom(
-                                            foregroundColor: Colors.blue[600],
-                                            side: BorderSide(color: Colors.blue[300]!),
+                                            foregroundColor: Colors.green[600],
+                                            side: BorderSide(color: Colors.green[300]!),
                                             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                                             shape: RoundedRectangleBorder(
                                               borderRadius: BorderRadius.circular(6),
