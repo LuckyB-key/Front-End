@@ -610,15 +610,20 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
   Future<void> _submitReview(String text, int rating, String nickname) async {
     try {
       final reviewData = {
-        'userId': 'user123', // 실제로는 로그인된 사용자 ID를 사용해야 함
+        'userId': 1, // 숫자로 변경
         'text': text,
         'rating': rating,
         'photoUrls': [], // 사진 기능은 나중에 추가
         'userNickname': nickname, // 사용자가 입력한 닉네임
       };
       
+      print('리뷰 작성 요청 데이터: $reviewData');
+      print('쉘터 ID: ${_localSelectedShelter!.id}');
+      
       // 실제 API 호출
       final response = await ReviewService.createReview(_localSelectedShelter!.id, reviewData);
+      
+      print('리뷰 작성 응답: $response');
       
       // 응답 확인
       if (response['success'] == true) {
@@ -633,10 +638,11 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
         // 리뷰 목록 새로고침
         context.read<ReviewProvider>().fetchReviews(_localSelectedShelter!.id);
       } else {
-        throw Exception('리뷰 작성에 실패했습니다.');
+        throw Exception('리뷰 작성에 실패했습니다: ${response['message'] ?? '알 수 없는 오류'}');
       }
       
     } catch (e) {
+      print('리뷰 작성 에러: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('리뷰 작성에 실패했습니다: $e'),

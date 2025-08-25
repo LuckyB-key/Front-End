@@ -49,8 +49,19 @@ class ReviewService {
   
   // 리뷰 작성
   static Future<Map<String, dynamic>> createReview(String shelterId, Map<String, dynamic> reviewData) async {
-    // ApiService 사용 (Map 반환)
-    return await ApiService.post('/api/v1/shelters/$shelterId/reviews', reviewData);
+    try {
+      print('ReviewService - 쉘터 ID: $shelterId');
+      print('ReviewService - 리뷰 데이터: $reviewData');
+      
+      // ApiService 사용 (Map 반환)
+      final response = await ApiService.post('/api/v1/shelters/$shelterId/reviews', reviewData);
+      
+      print('ReviewService - 응답: $response');
+      return response;
+    } catch (e) {
+      print('ReviewService - 에러: $e');
+      rethrow;
+    }
   }
   
   // 리뷰 수정
