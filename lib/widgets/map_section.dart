@@ -591,6 +591,96 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
     }
   }
 
+  // 코드 체크인 다이얼로그 표시
+  void _showCodeCheckinDialog() {
+    final TextEditingController codeController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('체크인 코드 입력'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('${_localSelectedShelter!.name}에 체크인하시겠습니까?'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: codeController,
+              decoration: const InputDecoration(
+                labelText: '체크인 코드',
+                hintText: '예: 123456',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.number,
+              maxLength: 6,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '쉼터에 표시된 6자리 코드를 입력해주세요',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('취소'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final code = codeController.text.trim();
+              if (code.isNotEmpty && code.length == 6) {
+                Navigator.of(context).pop();
+                _handleCodeCheckin(code);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('6자리 체크인 코드를 입력해주세요.'),
+                    backgroundColor: Colors.orange,
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
+            },
+            child: const Text('체크인'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 코드 체크인 처리
+  void _handleCodeCheckin(String code) {
+    print('✅ 코드 체크인: $code - ${_localSelectedShelter!.name}');
+    
+    // TODO: 실제 체크인 API 호출
+    // final success = await CheckinService.verifyCode(_localSelectedShelter!.id, code);
+    
+    // 임시로 성공 처리
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${_localSelectedShelter!.name} 체크인 완료! (코드: $code)'),
+        backgroundColor: Colors.green[600],
+        duration: const Duration(seconds: 3),
+        action: SnackBarAction(
+          label: '확인',
+          textColor: Colors.white,
+          onPressed: () {
+            print('✅ 체크인 확인됨: ${_localSelectedShelter!.name}');
+          },
+        ),
+      ),
+    );
+  }
+
   // 체크인 방법 선택 다이얼로그
   void _showCheckinOptions() {
     showDialog(
@@ -609,7 +699,7 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
-              _showCodeCheckin();
+              _showCodeCheckinDialog();
             },
             child: const Text('코드로 체크인'),
           ),
