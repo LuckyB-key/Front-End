@@ -433,7 +433,7 @@ class _AiRecommendationSectionState extends State<AiRecommendationSection> {
             children: [
               Icon(
                 Icons.psychology,
-                color: Colors.purple[600],
+                color: Colors.green[600],
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -574,10 +574,10 @@ class _AiRecommendationSectionState extends State<AiRecommendationSection> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.purple[200]!),
+        border: Border.all(color: Colors.green[200]!),
         boxShadow: [
           BoxShadow(
-            color: Colors.purple[100]!,
+            color: Colors.green[100]!,
             offset: const Offset(0, 1),
             blurRadius: 2,
           ),
@@ -591,7 +591,7 @@ class _AiRecommendationSectionState extends State<AiRecommendationSection> {
             children: [
               Icon(
                 Icons.star,
-                color: Colors.purple[600],
+                color: Colors.green[600],
                 size: 16,
               ),
               const SizedBox(width: 4),
@@ -668,9 +668,9 @@ class _AiRecommendationSectionState extends State<AiRecommendationSection> {
                   ),
                 );
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.purple[600],
-                foregroundColor: Colors.white,
+                              style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green[600],
+                  foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(6),
                 ),

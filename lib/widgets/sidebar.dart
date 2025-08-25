@@ -164,11 +164,11 @@ Widget _buildNavItem({
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: isClicked || isHovered
-                  ? Colors.blue[50]
+                  ? Colors.green[50]
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
               border: (isClicked || isHovered)
-                  ? Border.all(color: Colors.blue[200]!)
+                  ? Border.all(color: Colors.green[200]!)
                   : null,
             ),
             child: Row(
@@ -176,7 +176,7 @@ Widget _buildNavItem({
                 Icon(
                   icon,
                   color: isClicked || isHovered
-                      ? Colors.blue
+                      ? Colors.green
                       : Colors.grey[600],
                   size: 24,
                 ),
@@ -191,7 +191,7 @@ Widget _buildNavItem({
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                           color: isClicked || isHovered
-                              ? Colors.blue
+                              ? Colors.green
                               : Colors.black87,
                         ),
                       ),
@@ -202,7 +202,7 @@ Widget _buildNavItem({
                           style: TextStyle(
                             fontSize: 12,
                             color: isClicked || isHovered
-                                ? Colors.blue[600]
+                                ? Colors.green[600]
                                 : Colors.grey[600],
                           ),
                         ),

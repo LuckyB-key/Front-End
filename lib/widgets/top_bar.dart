@@ -26,19 +26,28 @@ class TopBar extends StatelessWidget {
           Container(
             width: 120,
             height: 40,
-            decoration: BoxDecoration(
-              color: Colors.grey[200],
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Center(
-              child: Text(
-                'LOGO',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey,
-                ),
-              ),
+            child: Image.asset(
+              'assets/images/mainlogo.png',
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) {
+                print('❌ 로고 이미지 로드 실패: $error');
+                return Container(
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Center(
+                    child: Text(
+                      'LOGO',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
           
