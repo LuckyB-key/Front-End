@@ -8,89 +8,80 @@ class ShelterProvider with ChangeNotifier {
   bool _isLoading = false;
   String _searchQuery = '';
   List<String> _activeFilters = [];
+  bool _hasError = false;
+  String _errorMessage = '';
 
   List<Shelter> get shelters => _shelters;
   List<Shelter> get filteredShelters => _filteredShelters;
   bool get isLoading => _isLoading;
+  bool get hasError => _hasError;
+  String get errorMessage => _errorMessage;
   String get searchQuery => _searchQuery;
   List<String> get activeFilters => _activeFilters;
 
-  // 더미 데이터로 초기화
-  void initializeShelters() {
-    _shelters = [
-      Shelter(
-        id: '1',
-        name: '시원한 도서관',
-        address: '서울시 강남구 테헤란로 123',
-        openingDays: '월-금 09:00-18:00',
-        maxCapacity: 50,
-        congestion: '보통',
-        facilities: ['에어컨', 'WiFi', '정수기', '화장실'],
-        rating: 4.5,
-        likes: 128,
-        imageUrl: 'https://via.placeholder.com/150',
-        latitude: 37.5665,
-        longitude: 126.9780,
-      ),
-      Shelter(
-        id: '2',
-        name: '아늑한 카페',
-        address: '서울시 마포구 홍대로 456',
-        openingDays: '매일 07:00-22:00',
-        maxCapacity: 30,
-        congestion: '여유',
-        facilities: ['에어컨', 'WiFi', '음료', '화장실'],
-        rating: 4.2,
-        likes: 95,
-        imageUrl: 'https://via.placeholder.com/150',
-        latitude: 37.5519,
-        longitude: 126.9250,
-      ),
-      Shelter(
-        id: '3',
-        name: '쾌적한 쇼핑몰',
-        address: '서울시 영등포구 여의대로 789',
-        openingDays: '매일 10:00-21:00',
-        maxCapacity: 100,
-        congestion: '혼잡',
-        facilities: ['에어컨', 'WiFi', '식당', '화장실', '주차장'],
-        rating: 4.0,
-        likes: 203,
-        imageUrl: 'https://via.placeholder.com/150',
-        latitude: 37.5219,
-        longitude: 126.9240,
-      ),
-      Shelter(
-        id: '4',
-        name: '조용한 공원 쉼터',
-        address: '서울시 송파구 올림픽로 321',
-        openingDays: '매일 06:00-22:00',
-        maxCapacity: 20,
-        congestion: '여유',
-        facilities: ['그늘', '벤치', '화장실', '음수대'],
-        rating: 4.7,
-        likes: 156,
-        imageUrl: 'https://via.placeholder.com/150',
-        latitude: 37.5139,
-        longitude: 127.1006,
-      ),
-      Shelter(
-        id: '5',
-        name: '전망 좋은 은행',
-        address: '서울시 중구 을지로 654',
-        openingDays: '월-금 09:00-16:00',
-        maxCapacity: 15,
-        congestion: '보통',
-        facilities: ['에어컨', 'WiFi', '화장실', 'ATM'],
-        rating: 4.3,
-        likes: 87,
-        imageUrl: 'https://via.placeholder.com/150',
-        latitude: 37.5665,
-        longitude: 126.9780,
-      ),
-    ];
-    _filteredShelters = _shelters;
-    notifyListeners();
+  Future<void> fetchShelters({double? latitude, double? longitude}) async {
+    try {
+      _isLoading = true;
+      _hasError = false;
+      _errorMessage = '';
+      notifyListeners();
+      
+      final lat = latitude ?? 37.5665;
+      final lng = longitude ?? 126.9780;
+      
+      print('🌍 쉼터 데이터 요청 시작');
+      print('🌐 요청 위치: 위도 $lat, 경도 $lng');
+      print('🌐 API 서버: http://43.201.63.235:8080');
+      
+      final response = await ShelterService.getShelters(
+        lat: lat,
+        lng: lng,
+        // 거리 제한 없음 - 모든 쉼터 가져오기
+        // distance: 10.0, // 10km 제한을 원한다면 이 줄을 활성화
+      );
+      
+      print('📡 API 응답 상태: ${response['success']}');
+      print('📊 응답 데이터 타입: ${response['data'].runtimeType}');
+      
+      if (response['success'] == true && response['data'] != null) {
+        final List<dynamic> sheltersData = response['data'];
+        
+        print('📈 데이터베이스에서 가져온 총 쉼터 수: ${sheltersData.length}');
+        
+        if (sheltersData.isNotEmpty) {
+          _shelters = sheltersData.map((json) {
+            final shelter = Shelter.fromJson(json);
+            print('🏠 쉼터: ${shelter.name}');
+            print('   🌐 위치: 위도 ${shelter.latitude}, 경도 ${shelter.longitude}');
+            print('   🏃 거리: ${shelter.distance}km');
+            print('   🚦 상태: ${shelter.status}');
+            print('   👥 혼잡도: ${shelter.predictedCongestion}');
+            print('   ---');
+            return shelter;
+          }).toList();
+          _filteredShelters = _shelters;
+          
+          print('✅ 성공적으로 ${_shelters.length}개의 쉼터를 불러왔습니다.');
+          print('🗺️ 지도에 마커를 표시할 준비가 되었습니다.');
+        } else {
+          print('⚠️ 데이터베이스에 쉼터가 없습니다.');
+          _shelters = [];
+          _filteredShelters = [];
+        }
+      } else {
+        print('❌ API 응답 실패: ${response['message']}');
+        throw Exception(response['message'] ?? '쉘터 목록을 불러오는데 실패했습니다.');
+      }
+    } catch (e) {
+      print('💥 쉘터 목록 조회 오류: $e');
+      _hasError = true;
+      _errorMessage = e.toString();
+      _shelters = [];
+      _filteredShelters = [];
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   void setSearchQuery(String query) {
@@ -118,7 +109,6 @@ class ShelterProvider with ChangeNotifier {
 
   void _applyFilters() {
     _filteredShelters = _shelters.where((shelter) {
-      // 검색어 필터
       if (_searchQuery.isNotEmpty) {
         if (!shelter.name.toLowerCase().contains(_searchQuery.toLowerCase()) &&
             !shelter.address.toLowerCase().contains(_searchQuery.toLowerCase())) {
@@ -126,7 +116,6 @@ class ShelterProvider with ChangeNotifier {
         }
       }
 
-      // 추가 필터들 (예: 혼잡도, 시설 등)
       for (String filter in _activeFilters) {
         if (filter == '여유' && shelter.congestion != '여유') return false;
         if (filter == '보통' && shelter.congestion != '보통') return false;
@@ -149,27 +138,21 @@ class ShelterProvider with ChangeNotifier {
         id: shelter.id,
         name: shelter.name,
         address: shelter.address,
-        openingDays: shelter.openingDays,
-        maxCapacity: shelter.maxCapacity,
-        congestion: shelter.congestion,
-        facilities: shelter.facilities,
-        rating: shelter.rating,
-        likes: shelter.likes + 1,
-        imageUrl: shelter.imageUrl,
+        distance: shelter.distance, // 필수 파라미터 추가
+        status: shelter.status,
+        predictedCongestion: shelter.predictedCongestion,
         latitude: shelter.latitude,
         longitude: shelter.longitude,
+        // 선택적 파라미터들
+        openingDays: shelter.openingDays,
+        maxCapacity: shelter.maxCapacity,
+        facilities: shelter.facilities,
+        rating: shelter.rating,
+        likes: shelter.likes + 1, // 좋아요 수 증가
+        imageUrl: shelter.imageUrl,
+        congestion: shelter.congestion,
       );
       _applyFilters();
-    }
-  }
-
-  Future<void> fetchShelters() async {
-    try {
-      final response = await ShelterService.getShelters();
-      // 응답 처리 로직
-      notifyListeners();
-    } catch (e) {
-      // 에러 처리
     }
   }
 }

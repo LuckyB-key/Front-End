@@ -223,325 +223,91 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      key: const ValueKey('osm-map-section'),
-      padding: const EdgeInsets.all(24),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            '지도',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          
-          const SizedBox(height: 24),
-          
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[300]!),
+    return Consumer<ShelterProvider>(
+      builder: (context, shelterProvider, child) {
+        // 로딩 중이거나 에러가 있거나 데이터가 없으면 빈 지도 표시
+        if (shelterProvider.isLoading || 
+            shelterProvider.hasError || 
+            shelterProvider.shelters.isEmpty) {
+          return Container(
+            color: Colors.grey[100],
+            child: Center(
+              child: Text(
+                shelterProvider.isLoading ? '지도를 불러오는 중...' :
+                shelterProvider.hasError ? '지도를 불러올 수 없습니다' :
+                '표시할 쉘터가 없습니다',
+                style: TextStyle(color: Colors.grey[600]),
               ),
-              clipBehavior: Clip.antiAlias,
-              child: Stack(
-                children: [
-                  // Flutter Map (OpenStreetMap 기반)
-                  FlutterMap(
-                    mapController: _mapController,
-                    options: MapOptions(
-                      center: const LatLng(37.5665, 126.9780), // 서울 중심
-                      zoom: 11.0, // 초기 줌 레벨
-                      minZoom: 5.0, // 최소 줌
-                      maxZoom: 18.0, // 최대 줌
-                      onMapReady: () {
-                        print('️ Map is ready!');
-                      },
-                    ),
-                    children: [
-                      // OpenStreetMap 타일 레이어
-                      TileLayer(
-                        urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-                        subdomains: ['a', 'b', 'c'],
-                        userAgentPackageName: 'com.example.not_hotspot',
-                        maxZoom: 19,
-                      ),
-                      
-                      // 쉼터 마커 레이어
-                      MarkerLayer(
-                        markers: _buildShelterMarkers(),
-                      ),
-                      
-                      // 현재 위치 마커 (있는 경우)
-                      if (_currentPosition != null)
-                        MarkerLayer(
-                          markers: [
-                            Marker(
-                              point: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
-                              width: 30,
-                              height: 30,
-                              child: Container(
-                                decoration: const BoxDecoration(
-                                  color: Colors.blue,
-                                  shape: BoxShape.circle,
-                                  border: Border.fromBorderSide(
-                                    BorderSide(color: Colors.white, width: 3),
-                                  ),
-                                ),
-                                child: const Icon(
-                                  Icons.my_location,
-                                  color: Colors.white,
-                                  size: 16,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                    ],
-                  ),
-                  
-                  // 지도 컨트롤 버튼들 (우측 상단)
-                  Positioned(
-                    top: 16,
-                    right: 16,
-                    child: Column(
-                      children: [
-                        // 현재 위치 버튼
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: IconButton(
-                            onPressed: _isLoadingLocation ? null : _moveToCurrentLocation,
-                            icon: _isLoadingLocation
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  )
-                                : const Icon(Icons.my_location),
-                            color: Colors.blue[700],
-                            tooltip: '현재 위치로 이동',
-                          ),
-                        ),
-                        
-                        const SizedBox(height: 8),
-                        
-                        // 줌 인 버튼
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: IconButton(
-                            onPressed: _zoomIn,
-                            icon: const Icon(Icons.add),
-                            color: Colors.grey[700],
-                            tooltip: '확대',
-                          ),
-                        ),
-                        
-                        const SizedBox(height: 8),
-                        
-                        // 줌 아웃 버튼
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: IconButton(
-                            onPressed: _zoomOut,
-                            icon: const Icon(Icons.remove),
-                            color: Colors.grey[700],
-                            tooltip: '축소',
-                          ),
-                        ),
-                      ],
+            ),
+          );
+        }
+        
+        // 실제 쉘터 데이터로 지도 표시
+        return FlutterMap(
+          mapController: _mapController,
+          options: MapOptions(
+            center: const LatLng(37.5665, 126.9780), // 서울 중심
+            zoom: 11.0, // 초기 줌 레벨
+            minZoom: 5.0, // 최소 줌
+            maxZoom: 18.0, // 최대 줌
+            onMapReady: () {
+              print('️ Map is ready!');
+            },
+          ),
+          children: [
+            // OpenStreetMap 타일 레이어
+            TileLayer(
+              urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+              subdomains: ['a', 'b', 'c'],
+              userAgentPackageName: 'com.example.not_hotspot',
+              maxZoom: 19,
+            ),
+            
+            // 쉼터 마커 레이어
+            MarkerLayer(
+              markers: shelterProvider.shelters.map((shelter) {
+                return Marker(
+                  point: LatLng(shelter.latitude, shelter.longitude),
+                  child: GestureDetector( // builder 대신 child 사용
+                    onTap: () => _showShelterModal(shelter),
+                    child: Icon(
+                      Icons.location_on,
+                      color: Colors.red,
+                      size: 30,
                     ),
                   ),
-                  
-                  // 로딩 인디케이터
-                  if (!_isMapLoaded)
-                    Container(
-                      color: Colors.grey[200],
-                      child: const Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            CircularProgressIndicator(),
-                            SizedBox(height: 16),
-                            Text(
-                              '지도를 불러오는 중...',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey,
-                              ),
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              '잠시만 기다려주세요',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          ],
+                );
+              }).toList(),
+            ),
+            
+            // 현재 위치 마커 (있는 경우)
+            if (_currentPosition != null)
+              MarkerLayer(
+                markers: [
+                  Marker(
+                    point: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+                    width: 30,
+                    height: 30,
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        color: Colors.blue,
+                        shape: BoxShape.circle,
+                        border: Border.fromBorderSide(
+                          BorderSide(color: Colors.white, width: 3),
                         ),
                       ),
-                    ),
-                  
-                  // 쉼터 상세 정보 모달 (지도 위에 겹쳐서 표시)
-                  if (_localSelectedShelter != null)
-                    Positioned(
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      child: SlideTransition(
-                        position: _modalSlideAnimation,
-                        child: FadeTransition(
-                          opacity: _modalFadeAnimation,
-                          child: Container(
-                            margin: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 10),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                // 모달 헤더
-                                Container(
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue[50],
-                                    borderRadius: const BorderRadius.only(
-                                      topLeft: Radius.circular(16),
-                                      topRight: Radius.circular(16),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.location_on,
-                                        color: Colors.blue[700],
-                                        size: 24,
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Text(
-                                          _localSelectedShelter!.name,
-                                          style: const TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.black87,
-                                          ),
-                                        ),
-                                      ),
-                                      IconButton(
-                                        onPressed: _closeModal,
-                                        icon: const Icon(Icons.close),
-                                        color: Colors.grey[600],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                
-                                // 모달 내용
-                                Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      _buildInfoRow('📍 주소', _localSelectedShelter!.address),
-                                      _buildInfoRow('🕒 운영일', _localSelectedShelter!.openingDays),
-                                      _buildInfoRow('👥 수용인원', '${_localSelectedShelter!.maxCapacity}명'),
-                                      _buildInfoRow('🚶 혼잡도', _localSelectedShelter!.congestion),
-                                      _buildInfoRow('⭐ 평점', '${_localSelectedShelter!.rating}/5.0'),
-                                      _buildInfoRow('❤️ 좋아요', '${_localSelectedShelter!.likes}개'),
-                                      
-                                      const SizedBox(height: 16),
-                                      
-                                      // 시설 정보
-                                      Text(
-                                        '🏗️ 시설',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.grey[800],
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Wrap(
-                                        spacing: 8,
-                                        runSpacing: 8,
-                                        children: _localSelectedShelter!.facilities.map((facility) {
-                                          return Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                            decoration: BoxDecoration(
-                                              color: Colors.blue[100],
-                                              borderRadius: BorderRadius.circular(20),
-                                            ),
-                                            child: Text(
-                                              facility,
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.blue[800],
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          );
-                                        }).toList(),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                      child: const Icon(
+                        Icons.my_location,
+                        color: Colors.white,
+                        size: 16,
                       ),
                     ),
+                  ),
                 ],
               ),
-            ),
-          ),
-        ],
-      ),
+          ],
+        );
+      },
     );
   }
 

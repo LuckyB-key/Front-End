@@ -174,27 +174,68 @@ class ShelterList extends StatelessWidget {
           // 쉘터 리스트
           Expanded(
             child: Consumer<ShelterProvider>(
-              builder: (context, provider, child) {
-                if (provider.isLoading) {
-                  return const Center(child: CircularProgressIndicator());
+              builder: (context, shelterProvider, child) {
+                if (shelterProvider.isLoading) {
+                  return const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text('쉘터 정보를 불러오는 중...'),
+                      ],
+                    ),
+                  );
                 }
                 
-                if (provider.filteredShelters.isEmpty) {
-                  return const Center(
-                    child: Text(
-                      '검색 결과가 없습니다.',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey,
-                      ),
+                if (shelterProvider.hasError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.error_outline, size: 64, color: Colors.red),
+                        SizedBox(height: 16),
+                        Text('오류가 발생했습니다'),
+                        SizedBox(height: 8),
+                        Text(shelterProvider.errorMessage, 
+                             style: TextStyle(color: Colors.grey),
+                             textAlign: TextAlign.center),
+                        SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () {
+                            shelterProvider.fetchShelters();
+                          },
+                          child: Text('다시 시도'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                
+                if (shelterProvider.filteredShelters.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.location_off, size: 64, color: Colors.grey),
+                        SizedBox(height: 16),
+                        Text('주변에 쉘터가 없습니다'),
+                        SizedBox(height: 8),
+                        Text('다른 위치에서 시도해보세요', 
+                             style: TextStyle(color: Colors.grey)),
+                      ],
                     ),
                   );
                 }
                 
                 return ListView.builder(
-                  itemCount: provider.filteredShelters.length,
+                  itemCount: shelterProvider.filteredShelters.length,
                   itemBuilder: (context, index) {
-                    return _buildShelterCard(context, provider.filteredShelters[index]);
+                    final shelter = shelterProvider.filteredShelters[index];
+                    return ShelterListItem(
+                      shelter: shelter,
+                      onTap: () => onShelterSelected?.call(shelter), // null 체크 추가
+                    );
                   },
                 );
               },
@@ -204,8 +245,20 @@ class ShelterList extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _buildShelterCard(BuildContext context, Shelter shelter) {
+class ShelterListItem extends StatelessWidget {
+  final Shelter shelter;
+  final VoidCallback onTap;
+
+  const ShelterListItem({
+    Key? key,
+    required this.shelter,
+    required this.onTap,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -289,16 +342,19 @@ class ShelterList extends StatelessWidget {
           
           const SizedBox(height: 16),
           
-          // 쉘터 정보 리스트
+          // 쉘터 정보 리스트 - 실제 API 데이터만 표시
           Column(
             children: [
               _buildInfoRow('주소', shelter.address),
-              _buildInfoRow('개방 요일', shelter.openingDays),
-              _buildInfoRow('최대 수용 인원', '${shelter.maxCapacity}명'),
-              _buildInfoRow('혼잡도', shelter.congestion),
-              _buildInfoRow('시설', shelter.facilities.join(', ')),
-              _buildInfoRow('리뷰', '${shelter.rating}점'),
-              _buildInfoRow('좋아요', '${shelter.likes}개'),
+              _buildInfoRow('거리', '${shelter.distance.toStringAsFixed(1)}km'),
+              _buildInfoRow('상태', shelter.status),
+              _buildInfoRow('혼잡도', shelter.predictedCongestion),
+              // API에서 제공하지 않는 정보는 제거
+              // _buildInfoRow('개방 요일', shelter.openingDays),
+              // _buildInfoRow('최대 수용 인원', '${shelter.maxCapacity}명'),
+              // _buildInfoRow('시설', shelter.facilities.join(', ')),
+              // _buildInfoRow('리뷰', '${shelter.rating}점'),
+              // _buildInfoRow('좋아요', '${shelter.likes}개'),
             ],
           ),
           
@@ -311,9 +367,7 @@ class ShelterList extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: () {
                     // 상세 정보 보기 - 지도에 모달 표시
-                    if (onShelterSelected != null) {
-                      onShelterSelected!(shelter);
-                    }
+                    onTap(); // onShelterSelected 대신 onTap 사용
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text('${shelter.name} 상세 정보를 지도에서 확인합니다.'),

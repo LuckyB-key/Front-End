@@ -1,17 +1,42 @@
 import 'api_service.dart';
 
 class ShelterService {
-  // 쉘터 목록 조회
+  // 쉘터 목록 조회 (위치 기반)
   static Future<Map<String, dynamic>> getShelters({
-    Map<String, dynamic>? queryParams,
+    required double lat, // latitude 대신 lat
+    required double lng, // longitude 대신 lng
+    double? distance,
+    String? type,
+    String? facilities,
   }) async {
     String endpoint = '/api/v1/shelters';
-    if (queryParams != null && queryParams.isNotEmpty) {
-      final queryString = queryParams.entries
-          .map((e) => '${e.key}=${Uri.encodeComponent(e.value.toString())}')
-          .join('&');
-      endpoint += '?$queryString';
+    
+    // 쿼리 파라미터 구성
+    final queryParams = <String, String>{
+      'lat': lat.toString(),
+      'lng': lng.toString(),
+    };
+    
+    // 거리 제한이 있으면 추가 (기본값: 10km)
+    if (distance != null) {
+      queryParams['distance'] = distance.toString();
+    } else {
+      // 기본 거리 제한 없음 - 모든 쉼터 가져오기
+      print('🌍 거리 제한 없음 - 데이터베이스의 모든 쉼터를 가져옵니다');
     }
+    
+    if (type != null) queryParams['type'] = type;
+    if (facilities != null) queryParams['facilities'] = facilities;
+    
+    final queryString = queryParams.entries
+        .map((e) => '${e.key}=${Uri.encodeComponent(e.value)}')
+        .join('&');
+    endpoint += '?$queryString';
+    
+    print('🔍 API 엔드포인트: $endpoint');
+    print('🌍 위치: 위도 $lat, 경도 $lng');
+    print('📏 거리 제한: ${distance ?? "제한 없음"}');
+    
     return await ApiService.get(endpoint);
   }
   

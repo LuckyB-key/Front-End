@@ -107,6 +107,15 @@ class TopBar extends StatelessWidget {
               ),
             ],
           ),
+
+          // 새로고침 버튼 추가
+          IconButton(
+            onPressed: () {
+              context.read<ShelterProvider>().fetchShelters();
+            },
+            icon: Icon(Icons.refresh),
+            tooltip: '새로고침',
+          ),
         ],
       ),
     );

@@ -20,9 +20,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    // 데이터 초기화
+    // API에서 데이터 로드
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ShelterProvider>().initializeShelters();
+      print(' HomeScreen 초기화 - 쉼터 데이터 로드 시작');
+      context.read<ShelterProvider>().fetchShelters();
     });
   }
 
