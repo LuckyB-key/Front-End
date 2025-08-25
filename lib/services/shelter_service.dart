@@ -80,25 +80,31 @@ class ShelterService {
     return await ApiService.get('/api/v1/shelters/recommendations');
   }
   
-  // AI 추천 알림 (위치 기반)
+  // AI 추천 쉼터 조회 (실제 쉼터 데이터)
   static Future<Map<String, dynamic>> getAiRecommendations({
     required double latitude,
     required double longitude,
+    List<String>? preferences,
+    String? category,
   }) async {
-    String endpoint = '/api/v1/shelters/notifications/ai-recommendations';
+    String endpoint = '/api/v1/shelters/recommendations';
     
     // 쿼리 파라미터 구성
     final queryParams = <String, String>{
-      'latitude': latitude.toString(),
-      'longitude': longitude.toString(),
+      'lat': latitude.toString(),
+      'lng': longitude.toString(),
     };
+    
+    if (category != null) {
+      queryParams['category'] = category;
+    }
     
     final queryString = queryParams.entries
         .map((e) => '${e.key}=${Uri.encodeComponent(e.value)}')
         .join('&');
     endpoint += '?$queryString';
     
-    print('🌍 AI 추천 API 엔드포인트: $endpoint');
+    print('🌍 AI 추천 쉼터 API 엔드포인트: $endpoint');
     print('📍 위치: 위도 $latitude, 경도 $longitude');
     
     return await ApiService.get(endpoint);

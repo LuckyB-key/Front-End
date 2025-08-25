@@ -451,49 +451,33 @@ class _AiRecommendationSectionState extends State<AiRecommendationSection> {
                   itemCount: aiProvider.recommendations.length,
                   itemBuilder: (context, index) {
                     final recommendation = aiProvider.recommendations[index];
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.purple[50],
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: Colors.purple[200]!),
+                    return ShelterListItem(
+                      shelter: Shelter(
+                        id: recommendation.id,
+                        name: recommendation.name,
+                        address: 'AI 추천 쉼터',
+                        distance: recommendation.distance,
+                        status: recommendation.status,
+                        predictedCongestion: recommendation.predictedCongestion,
+                        latitude: 0.0,
+                        longitude: 0.0,
+                        openingDays: '',
+                        maxCapacity: 0,
+                        facilities: recommendation.facilities,
+                        rating: 0.0,
+                        likes: 0,
+                        imageUrl: '',
+                        congestion: '',
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.star,
-                                color: Colors.purple[600],
-                                size: 12,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'AI 추천 ${index + 1}',
-                                style: TextStyle(
-                                  color: Colors.purple[600],
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 10,
-                                ),
-                              ),
-                            ],
+                      onTap: () {
+                        // AI 추천 쉼터 클릭 시 처리
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('${recommendation.name} 상세 정보를 확인합니다.'),
+                            duration: const Duration(seconds: 1),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            recommendation.message.isNotEmpty 
-                                ? recommendation.message 
-                                : 'AI가 추천하는 쉼터입니다',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
+                        );
+                      },
                     );
                   },
                 );

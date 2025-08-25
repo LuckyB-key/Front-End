@@ -402,74 +402,89 @@ class _ShelterListState extends State<ShelterList> {
                 );
               }
 
-              return Container(
-                height: 120,
-                decoration: BoxDecoration(
-                  color: Colors.purple[50],
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.purple[200]!),
-                ),
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.all(12),
-                  itemCount: aiProvider.recommendations.length,
-                  itemBuilder: (context, index) {
-                    final recommendation = aiProvider.recommendations[index];
-                    return Container(
-                      width: 200,
-                      margin: const EdgeInsets.only(right: 12),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.purple[300]!),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.star,
-                                color: Colors.purple[600],
-                                size: 16,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'AI 추천 ${index + 1}',
-                                style: TextStyle(
-                                  color: Colors.purple[600],
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            recommendation.message.isNotEmpty 
-                                ? recommendation.message 
-                                : 'AI가 추천하는 쉼터입니다',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
+              return ListView.builder(
+                itemCount: aiProvider.recommendations.length,
+                itemBuilder: (context, index) {
+                  final recommendation = aiProvider.recommendations[index];
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.purple[50],
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: Colors.purple[200]!),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.star,
+                              color: Colors.purple[600],
+                              size: 12,
                             ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                            const SizedBox(width: 4),
+                            Text(
+                              'AI 추천 ${index + 1}',
+                              style: TextStyle(
+                                color: Colors.purple[600],
+                                fontWeight: FontWeight.bold,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          recommendation.name,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
                           ),
-                          const SizedBox(height: 8),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '거리: ${recommendation.distance.toStringAsFixed(1)}km',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '상태: ${recommendation.status}',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        if (recommendation.facilities.isNotEmpty) ...[
+                          const SizedBox(height: 2),
                           Text(
-                            '추천 이유: ${recommendation.additionalProps.length}개 항목',
+                            '시설: ${recommendation.facilities.take(2).join(', ')}',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 10,
                               color: Colors.grey[600],
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
-                      ),
-                    );
-                  },
-                ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '혼잡도: ${recommendation.predictedCongestion}',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               );
             },
           ),
