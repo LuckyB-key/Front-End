@@ -44,11 +44,59 @@ class ShelterDetailModal extends StatelessWidget {
                     topRight: Radius.circular(16),
                   ),
                 ),
-                child: const Icon(
-                  Icons.image,
-                  size: 80,
-                  color: Colors.grey,
-                ),
+                child: shelter.imageUrl.isNotEmpty
+                    ? ClipRRect(
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(16),
+                          topRight: Radius.circular(16),
+                        ),
+                        child: Image.network(
+                          shelter.imageUrl,
+                          width: double.infinity,
+                          height: 200,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              height: 200,
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[200],
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(16),
+                                  topRight: Radius.circular(16),
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.image,
+                                size: 80,
+                                color: Colors.grey,
+                              ),
+                            );
+                          },
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              height: 200,
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[200],
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(16),
+                                  topRight: Radius.circular(16),
+                                ),
+                              ),
+                              child: const Center(
+                                child: CircularProgressIndicator(),
+                              ),
+                            );
+                          },
+                        ),
+                      )
+                    : const Icon(
+                        Icons.image,
+                        size: 80,
+                        color: Colors.grey,
+                      ),
               ),
               
               // 닫기 버튼

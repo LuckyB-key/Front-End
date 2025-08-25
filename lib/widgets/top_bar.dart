@@ -24,8 +24,8 @@ class TopBar extends StatelessWidget {
         children: [
           // 로고
           Container(
-            width: 120,
-            height: 40,
+            width: 100,
+            height: 60,
             child: Image.asset(
               'assets/images/mainlogo.png',
               fit: BoxFit.contain,

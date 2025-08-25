@@ -870,27 +870,101 @@ class ShelterListItem extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 쉘터명
-          Text(
-            shelter.name,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          
-          const SizedBox(height: 8),
-          
-          // 쉘터 정보
-          Column(
+          // 상단: 이미지와 정보
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildInfoRow('주소', shelter.address),
-              _buildInfoRow('거리', '${shelter.distance.toStringAsFixed(1)}km'),
-              _buildInfoRow('상태', shelter.status),
-              _buildInfoRow('혼잡도', shelter.predictedCongestion),
+              // 이미지 썸네일
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: shelter.imageUrl.isNotEmpty
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          shelter.imageUrl,
+                          width: 60,
+                          height: 60,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              width: 60,
+                              height: 60,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[200],
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                Icons.image,
+                                color: Colors.grey,
+                                size: 24,
+                              ),
+                            );
+                          },
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              width: 60,
+                              height: 60,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[200],
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      )
+                    : const Icon(
+                        Icons.image,
+                        color: Colors.grey,
+                        size: 24,
+                      ),
+              ),
+              
+              const SizedBox(width: 12),
+              
+              // 쉼터 정보
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 쉘터명
+                    Text(
+                      shelter.name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 8),
+                    
+                    // 쉘터 정보
+                    Column(
+                      children: [
+                        _buildInfoRow('주소', shelter.address),
+                        _buildInfoRow('거리', '${shelter.distance.toStringAsFixed(1)}km'),
+                        _buildInfoRow('상태', shelter.status),
+                        _buildInfoRow('혼잡도', shelter.predictedCongestion),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
+          
+          const SizedBox(height: 12),
           
           const SizedBox(height: 12),
           

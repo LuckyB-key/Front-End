@@ -13,11 +13,13 @@ import '../screens/qr_checkin_screen.dart';
 class MapSection extends StatefulWidget {
   final Shelter? selectedShelter;
   final VoidCallback? onShelterDeselected;
+  final List<Shelter>? likedShelters; // 좋아요 쉼터들만 전달받는 props
 
   const MapSection({
     super.key,
     this.selectedShelter,
     this.onShelterDeselected,
+    this.likedShelters,
   });
 
   @override
@@ -749,10 +751,13 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     return Consumer<ShelterProvider>(
       builder: (context, shelterProvider, child) {
+        // 좋아요 쉼터들만 사용할지 결정
+        final sheltersToShow = widget.likedShelters ?? shelterProvider.shelters;
+        
         // 로딩 중이거나 에러가 있거나 데이터가 없으면 빈 지도 표시
         if (shelterProvider.isLoading || 
             shelterProvider.hasError || 
-            shelterProvider.shelters.isEmpty) {
+            sheltersToShow.isEmpty) {
     return Container(
             color: Colors.grey[100],
             child: Center(
@@ -791,7 +796,7 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
                       
                       // 쉼터 마커 레이어
                       MarkerLayer(
-                  markers: shelterProvider.shelters.map((shelter) {
+                  markers: sheltersToShow.map((shelter) {
                     return Marker(
                       point: LatLng(shelter.latitude, shelter.longitude),
                       child: GestureDetector(

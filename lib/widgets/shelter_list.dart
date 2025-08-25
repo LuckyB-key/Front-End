@@ -741,7 +741,7 @@ class ShelterListItem extends StatelessWidget {
                 ),
               ),
               
-              // 이미지 플레이스홀더
+              // 이미지 썸네일
               Container(
                 width: 60,
                 height: 60,
@@ -749,11 +749,52 @@ class ShelterListItem extends StatelessWidget {
                   color: Colors.grey[200],
                   borderRadius: BorderRadius.circular(30),
                 ),
-                child: const Icon(
-                  Icons.image,
-                  color: Colors.grey,
-                  size: 30,
-                ),
+                child: shelter.imageUrl.isNotEmpty
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(30),
+                        child: Image.network(
+                          shelter.imageUrl,
+                          width: 60,
+                          height: 60,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              width: 60,
+                              height: 60,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[200],
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              child: const Icon(
+                                Icons.image,
+                                color: Colors.grey,
+                                size: 30,
+                              ),
+                            );
+                          },
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              width: 60,
+                              height: 60,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[200],
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              child: const Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      )
+                    : const Icon(
+                        Icons.image,
+                        color: Colors.grey,
+                        size: 30,
+                      ),
               ),
               
               const SizedBox(width: 8),
