@@ -739,7 +739,7 @@ class AllSheltersSection extends StatelessWidget {
             children: [
               Icon(
                 Icons.location_on,
-                color: Colors.blue[600],
+                color: Colors.green[600],
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -975,7 +975,7 @@ class ShelterListItem extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: onTap,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
+                    backgroundColor: Colors.green[600],
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(6),

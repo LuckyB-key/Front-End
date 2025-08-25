@@ -49,9 +49,19 @@ class _LikesScreenState extends State<LikesScreen> {
             const SizedBox(width: 24),
             Expanded(
               flex: 2,
-              child: MapSection(
-                selectedShelter: selectedShelter,
-                onShelterDeselected: _onShelterDeselected,
+              child: Consumer<ShelterProvider>(
+                builder: (context, provider, child) {
+                  // 사용자가 좋아요를 누른 쉼터들만 필터링
+                  final likedShelters = provider.shelters
+                      .where((shelter) => provider.isLiked(shelter.id))
+                      .toList();
+                  
+                  return MapSection(
+                    selectedShelter: selectedShelter,
+                    onShelterDeselected: _onShelterDeselected,
+                    likedShelters: likedShelters, // 좋아요 쉼터들만 전달
+                  );
+                },
               ),
             ),
           ],
@@ -108,13 +118,41 @@ class _LikedShelterList extends StatelessWidget {
         Expanded(
           child: Consumer<ShelterProvider>(
             builder: (context, provider, child) {
+              // 사용자가 실제로 좋아요를 누른 쉼터들만 필터링
               final likedShelters = provider.shelters
-                  .where((s) => s.likes > 0)
-                  .toList()
-                ..sort((a, b) => b.likes.compareTo(a.likes));
+                  .where((shelter) => provider.isLiked(shelter.id))
+                  .toList();
 
               if (likedShelters.isEmpty) {
-                return const Center(child: Text('아직 좋아한 쉼터가 없습니다'));
+                return const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.favorite_border,
+                        size: 80,
+                        color: Colors.grey,
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        '아직 좋아한 쉼터가 없습니다',
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        '쉼터에 좋아요를 눌러보세요!',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
               }
 
               return ListView.builder(
@@ -157,11 +195,52 @@ class _LikedShelterList extends StatelessWidget {
                               color: Colors.grey[200],
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const Icon(
-                              Icons.image,
-                              color: Colors.grey,
-                              size: 40,
-                            ),
+                            child: shelter.imageUrl.isNotEmpty
+                                ? ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Image.network(
+                                      shelter.imageUrl,
+                                      width: 80,
+                                      height: 80,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return Container(
+                                          width: 80,
+                                          height: 80,
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey[200],
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: const Icon(
+                                            Icons.image,
+                                            color: Colors.grey,
+                                            size: 40,
+                                          ),
+                                        );
+                                      },
+                                      loadingBuilder: (context, child, loadingProgress) {
+                                        if (loadingProgress == null) return child;
+                                        return Container(
+                                          width: 80,
+                                          height: 80,
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey[200],
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: const Center(
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  )
+                                : const Icon(
+                                    Icons.image,
+                                    color: Colors.grey,
+                                    size: 40,
+                                  ),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
@@ -236,6 +315,28 @@ class _LikedShelterList extends StatelessWidget {
                                 ),
                               ],
                             ),
+                          ),
+                          // 좋아요 취소 버튼
+                          Consumer<ShelterProvider>(
+                            builder: (context, provider, child) {
+                              return IconButton(
+                                onPressed: () async {
+                                  await provider.toggleLike(shelter.id);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('${shelter.name} 좋아요를 취소했습니다.'),
+                                      duration: const Duration(seconds: 1),
+                                      backgroundColor: Colors.red[600],
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(
+                                  Icons.favorite,
+                                  color: Colors.red,
+                                  size: 24,
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),

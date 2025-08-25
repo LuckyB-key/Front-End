@@ -281,7 +281,7 @@ class ShelterDetailModal extends StatelessWidget {
                         icon: const Icon(Icons.directions),
                         label: const Text('길찾기'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
+                          backgroundColor: Colors.green[600],
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(

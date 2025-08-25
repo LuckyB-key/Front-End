@@ -82,7 +82,7 @@ class _QRCheckinScreenState extends State<QRCheckinScreen> {
                 icon: const Icon(Icons.camera_alt),
                 label: const Text('카메라로 촬영'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue[600],
+                  backgroundColor: Colors.green[600],
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -102,8 +102,8 @@ class _QRCheckinScreenState extends State<QRCheckinScreen> {
                 icon: const Icon(Icons.photo_library),
                 label: const Text('갤러리에서 선택'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.blue[600],
-                  side: BorderSide(color: Colors.blue[600]!),
+                                  foregroundColor: Colors.green[600],
+                side: BorderSide(color: Colors.green[600]!),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),

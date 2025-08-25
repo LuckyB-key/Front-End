@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:not_hotspot/screens/home_screen.dart';
 import '../screens/notifications_screen.dart';
-import '../screens/likes_screen2.dart';
+import '../screens/likes_screen.dart';
 import '../screens/more_screen.dart';
 
 class Sidebar extends StatefulWidget {

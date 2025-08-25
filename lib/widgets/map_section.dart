@@ -1085,7 +1085,7 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.my_location),
-                      color: Colors.blue[600],
+                      color: Colors.green[600],
                     ),
                   ),
                   
@@ -1107,7 +1107,7 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
                     child: IconButton(
                       onPressed: _zoomIn,
                       icon: const Icon(Icons.add),
-                      color: Colors.blue[600],
+                      color: Colors.green[600],
                     ),
                   ),
                   
@@ -1129,7 +1129,7 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
                     child: IconButton(
                       onPressed: _zoomOut,
                       icon: const Icon(Icons.remove),
-                      color: Colors.blue[600],
+                      color: Colors.green[600],
                     ),
                   ),
                 ],

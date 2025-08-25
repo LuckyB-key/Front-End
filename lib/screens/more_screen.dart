@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'more_profile_page.dart';
+import 'more_NotificationPage.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
@@ -40,13 +42,27 @@ class MoreScreen extends StatelessWidget {
                         icon: Icons.person_outline,
                         title: '프로필 설정',
                         subtitle: '개인정보 및 계정 설정',
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const MoreProfilePage(),
+                            ),
+                          );
+                        },
                       ),
                       _buildMenuItem(
                         icon: Icons.notifications_outlined,
                         title: '알림 설정',
                         subtitle: '푸시 알림 및 이메일 설정',
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const MoreNotificationPage(),
+                            ),
+                          );
+                        },
                       ),
                       _buildMenuItem(
                         icon: Icons.security,
