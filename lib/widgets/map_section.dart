@@ -550,6 +550,59 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
     }
   }
 
+  // 체크인 방법 선택 다이얼로그
+  void _showCheckinOptions() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('체크인 방법 선택'),
+        content: Text('${_localSelectedShelter!.name}에 체크인하시겠습니까?'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _showCameraCheckin();
+            },
+            child: const Text('카메라로 체크인'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _showCodeCheckin();
+            },
+            child: const Text('코드로 체크인'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('취소'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 카메라 체크인 (기능 미구현)
+  void _showCameraCheckin() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${_localSelectedShelter!.name} 카메라 체크인 기능은 준비 중입니다.'),
+        backgroundColor: Colors.blue[600],
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  // 코드 체크인 (기능 미구현)
+  void _showCodeCheckin() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${_localSelectedShelter!.name} 코드 체크인 기능은 준비 중입니다.'),
+        backgroundColor: Colors.green[600],
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _modalAnimationController.dispose();
@@ -565,7 +618,7 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
         if (shelterProvider.isLoading || 
             shelterProvider.hasError || 
             shelterProvider.shelters.isEmpty) {
-          return Container(
+    return Container(
             color: Colors.grey[100],
             child: Center(
               child: Text(
@@ -580,29 +633,29 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
         
         // 실제 쉘터 데이터로 지도 표시
         return Stack(
-          children: [
-            FlutterMap(
-              mapController: _mapController,
-              options: MapOptions(
-                center: const LatLng(37.5665, 126.9780), // 서울 중심
-                zoom: 11.0, // 초기 줌 레벨
-                minZoom: 5.0, // 최소 줌
-                maxZoom: 18.0, // 최대 줌
-                onMapReady: () {
+                children: [
+                  FlutterMap(
+                    mapController: _mapController,
+                    options: MapOptions(
+                      center: const LatLng(37.5665, 126.9780), // 서울 중심
+                      zoom: 11.0, // 초기 줌 레벨
+                      minZoom: 5.0, // 최소 줌
+                      maxZoom: 18.0, // 최대 줌
+                      onMapReady: () {
                   print('Map is ready!');
-                },
-              ),
-              children: [
-                // OpenStreetMap 타일 레이어
-                TileLayer(
-                  urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-                  subdomains: ['a', 'b', 'c'],
-                  userAgentPackageName: 'com.example.not_hotspot',
-                  maxZoom: 19,
-                ),
-                
-                // 쉼터 마커 레이어
-                MarkerLayer(
+                      },
+                    ),
+                    children: [
+                      // OpenStreetMap 타일 레이어
+                      TileLayer(
+                        urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                        subdomains: ['a', 'b', 'c'],
+                        userAgentPackageName: 'com.example.not_hotspot',
+                        maxZoom: 19,
+                      ),
+                      
+                      // 쉼터 마커 레이어
+                      MarkerLayer(
                   markers: shelterProvider.shelters.map((shelter) {
                     return Marker(
                       point: LatLng(shelter.latitude, shelter.longitude),
@@ -616,102 +669,102 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
                       ),
                     );
                   }).toList(),
-                ),
-                
-                // 현재 위치 마커 (있는 경우)
-                if (_currentPosition != null)
-                  MarkerLayer(
-                    markers: [
-                      Marker(
-                        point: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
-                        width: 30,
-                        height: 30,
-                        child: Container(
-                          decoration: const BoxDecoration(
-                            color: Colors.blue,
-                            shape: BoxShape.circle,
-                            border: Border.fromBorderSide(
-                              BorderSide(color: Colors.white, width: 3),
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.my_location,
-                            color: Colors.white,
-                            size: 16,
-                          ),
-                        ),
                       ),
-                    ],
-                  ),
-              ],
-            ),
-            
-            // 쉼터 상세 정보 모달 (지도 위에 겹쳐서 표시)
-            if (_localSelectedShelter != null)
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: SlideTransition(
-                  position: _modalSlideAnimation,
-                  child: FadeTransition(
-                    opacity: _modalFadeAnimation,
-                    child: Container(
-                      margin: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // 모달 헤더
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.blue[50],
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(16),
-                                topRight: Radius.circular(16),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.location_on,
-                                  color: Colors.blue[700],
-                                  size: 24,
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    _localSelectedShelter!.name,
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black87,
-                                    ),
+                      
+                      // 현재 위치 마커 (있는 경우)
+                      if (_currentPosition != null)
+                        MarkerLayer(
+                          markers: [
+                            Marker(
+                              point: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+                              width: 30,
+                              height: 30,
+                              child: Container(
+                                decoration: const BoxDecoration(
+                                  color: Colors.blue,
+                                  shape: BoxShape.circle,
+                                  border: Border.fromBorderSide(
+                                    BorderSide(color: Colors.white, width: 3),
                                   ),
                                 ),
-                                IconButton(
-                                  onPressed: _closeModal,
-                                  icon: const Icon(Icons.close),
-                                  color: Colors.grey[600],
+                                child: const Icon(
+                                  Icons.my_location,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
+                    ),
+                  
+                  // 쉼터 상세 정보 모달 (지도 위에 겹쳐서 표시)
+                  if (_localSelectedShelter != null)
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: SlideTransition(
+                        position: _modalSlideAnimation,
+                        child: FadeTransition(
+                          opacity: _modalFadeAnimation,
+                          child: Container(
+                            margin: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 10),
                                 ),
                               ],
                             ),
-                          ),
-                          
-                          // 모달 내용
-                          Padding(
-                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // 모달 헤더
+                                Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue[50],
+                                    borderRadius: const BorderRadius.only(
+                                      topLeft: Radius.circular(16),
+                                      topRight: Radius.circular(16),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.location_on,
+                                        color: Colors.blue[700],
+                                        size: 24,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          _localSelectedShelter!.name,
+                                          style: const TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                      ),
+                                      IconButton(
+                                        onPressed: _closeModal,
+                                        icon: const Icon(Icons.close),
+                                        color: Colors.grey[600],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                
+                                // 모달 내용
+                                Padding(
+                                  padding: const EdgeInsets.all(16),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -800,7 +853,7 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
                                           ),
                                           label: Text(
                                             '리뷰',
-                                            style: TextStyle(
+                                        style: TextStyle(
                                               color: Colors.blue[600],
                                               fontWeight: FontWeight.w600,
                                               fontSize: 12,
@@ -824,13 +877,7 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
                                         width: double.infinity,
                                         child: ElevatedButton.icon(
                                           onPressed: () {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(
-                                                content: Text('${_localSelectedShelter!.name} 체크인 기능은 준비 중입니다.'),
-                                                backgroundColor: Colors.green[600],
-                                                duration: const Duration(seconds: 2),
-                                              ),
-                                            );
+                                            _showCheckinOptions();
                                           },
                                           icon: Icon(
                                             Icons.camera_alt,
@@ -914,9 +961,9 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
                           color: Colors.black.withOpacity(0.1),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
+          ),
+        ],
+      ),
                     child: IconButton(
                       onPressed: _zoomIn,
                       icon: const Icon(Icons.add),
@@ -931,10 +978,10 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(8),
-                      boxShadow: [
-                        BoxShadow(
+                boxShadow: [
+                  BoxShadow(
                           color: Colors.black.withOpacity(0.1),
-                          blurRadius: 8,
+                    blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
                       ],
@@ -951,7 +998,7 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
           ],
         );
       },
-    );
+      );
   }
 
   Widget _buildInfoRow(String label, String value) {
