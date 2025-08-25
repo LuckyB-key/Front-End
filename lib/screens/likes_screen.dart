@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/shelter_provider.dart';
 import '../models/shelter.dart';
+import 'home_screen.dart';
 
 class LikesScreen extends StatelessWidget {
   const LikesScreen({super.key});
@@ -46,11 +47,10 @@ class LikesScreen extends StatelessWidget {
             Expanded(
               child: Consumer<ShelterProvider>(
                 builder: (context, provider, child) {
-                  // 좋아요가 많은 순으로 정렬
+                  // 사용자가 좋아요를 누른 쉼터들만 필터링
                   final likedShelters = provider.shelters
-                      .where((shelter) => shelter.likes > 0)
-                      .toList()
-                    ..sort((a, b) => b.likes.compareTo(a.likes));
+                      .where((shelter) => provider.isLiked(shelter.id))
+                      .toList();
                   
                   if (likedShelters.isEmpty) {
                     return const Center(
@@ -87,7 +87,7 @@ class LikesScreen extends StatelessWidget {
                   return ListView.builder(
                     itemCount: likedShelters.length,
                     itemBuilder: (context, index) {
-                      return _buildLikedShelterCard(likedShelters[index]);
+                      return _buildLikedShelterCard(context, likedShelters[index], provider);
                     },
                   );
                 },
@@ -99,7 +99,7 @@ class LikesScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildLikedShelterCard(Shelter shelter) {
+  Widget _buildLikedShelterCard(BuildContext context, Shelter shelter, ShelterProvider provider) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
@@ -223,6 +223,14 @@ class LikesScreen extends StatelessWidget {
               IconButton(
                 onPressed: () {
                   // 좋아요 취소
+                  provider.toggleLike(shelter.id);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('${shelter.name} 좋아요를 취소했습니다.'),
+                      duration: const Duration(seconds: 1),
+                      backgroundColor: Colors.red[600],
+                    ),
+                  );
                 },
                 icon: const Icon(
                   Icons.favorite,
@@ -232,7 +240,9 @@ class LikesScreen extends StatelessWidget {
               const SizedBox(height: 8),
               TextButton(
                 onPressed: () {
-                  // 상세보기
+                  // 상세보기 - 지도에서 표시
+                  Navigator.pop(context); // 좋아요 화면 닫기
+                  // TODO: 지도에서 쉼터 표시 기능 추가
                 },
                 child: const Text('상세보기'),
               ),

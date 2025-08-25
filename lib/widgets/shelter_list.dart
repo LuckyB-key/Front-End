@@ -808,22 +808,45 @@ class ShelterListItem extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: OutlinedButton(
-                  onPressed: () {
-                    context.read<ShelterProvider>().toggleLike(shelter.id);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('${shelter.name}에 좋아요를 눌렀습니다!'),
-                        duration: const Duration(seconds: 1),
+                child: Consumer<ShelterProvider>(
+                  builder: (context, provider, child) {
+                    final isLiked = provider.isLiked(shelter.id);
+                    return ElevatedButton(
+                      onPressed: () async {
+                        await provider.toggleLike(shelter.id);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(isLiked 
+                              ? '${shelter.name} 좋아요를 취소했습니다.'
+                              : '${shelter.name}에 좋아요를 눌렀습니다!'),
+                            duration: const Duration(seconds: 1),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isLiked ? Colors.red[600] : Colors.white,
+                        foregroundColor: isLiked ? Colors.white : Colors.red[600],
+                        side: isLiked ? null : BorderSide(color: Colors.red[600]!),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            isLiked ? '🤍' : '❤️',
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            isLiked ? '좋아요 해제' : '좋아요',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ],
                       ),
                     );
                   },
-                  style: OutlinedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text('좋아요'),
                 ),
               ),
             ],

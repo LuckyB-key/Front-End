@@ -7,6 +7,7 @@ import '../widgets/top_bar.dart';
 import '../widgets/sidebar.dart';
 import '../widgets/map_section.dart';
 import '../models/shelter.dart';
+import '../models/ai_recommendation.dart';
 import 'package:geolocator/geolocator.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -539,60 +540,158 @@ class _AiRecommendationSectionState extends State<AiRecommendationSection> {
                   itemCount: aiProvider.recommendations.length,
                   itemBuilder: (context, index) {
                     final recommendation = aiProvider.recommendations[index];
-                    return ShelterListItem(
-                      shelter: Shelter(
-                        id: recommendation.id,
-                        name: recommendation.name,
-                        address: recommendation.address, // 실제 주소 사용 (AI 추천 쉼터가 아닌)
-                        distance: recommendation.distance,
-                        status: recommendation.status,
-                        predictedCongestion: recommendation.predictedCongestion,
-                        latitude: recommendation.latitude, // 실제 위도 사용
-                        longitude: recommendation.longitude, // 실제 경도 사용
-                        openingDays: '',
-                        maxCapacity: 0,
-                        facilities: recommendation.facilities,
-                        rating: 0.0,
-                        likes: 0,
-                        imageUrl: '',
-                        congestion: '',
-                      ),
-                      onTap: () {
-                        // AI 추천에서 선택된 쉼터를 지도에서 표시
-                        final shelter = Shelter(
-                          id: recommendation.id,
-                          name: recommendation.name,
-                          address: recommendation.address,
-                          distance: recommendation.distance,
-                          status: recommendation.status,
-                          predictedCongestion: recommendation.predictedCongestion,
-                          latitude: recommendation.latitude,
-                          longitude: recommendation.longitude,
-                          openingDays: '',
-                          maxCapacity: 0,
-                          facilities: recommendation.facilities,
-                          rating: 0.0,
-                          likes: 0,
-                          imageUrl: '',
-                          congestion: '',
-                        );
-                        
-                        // HomeScreen의 _onShelterSelected 함수 호출
-                        final homeScreen = context.findAncestorStateOfType<_HomeScreenState>();
-                        homeScreen?._onShelterSelected(shelter);
-                        
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('${recommendation.name} 상세 정보를 지도에서 확인합니다.'),
-                            duration: const Duration(seconds: 1),
-                            backgroundColor: Colors.purple[600],
-                          ),
-                        );
-                      },
-                    );
+                    return _buildAiRecommendationCard(context, recommendation);
                   },
                 );
               },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // AI 추천 카드 위젯
+  Widget _buildAiRecommendationCard(BuildContext context, AiRecommendation recommendation) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.purple[200]!),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.purple[100]!,
+            offset: const Offset(0, 1),
+            blurRadius: 2,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // AI 추천 표시
+          Row(
+            children: [
+              Icon(
+                Icons.star,
+                color: Colors.purple[600],
+                size: 16,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'AI 추천',
+                style: TextStyle(
+                  color: Colors.purple[600],
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 8),
+          
+          // 쉼터명
+          Text(
+            recommendation.name,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          
+          const SizedBox(height: 8),
+          
+          // 쉼터 정보
+          Column(
+            children: [
+              _buildInfoRow('주소', recommendation.address),
+              _buildInfoRow('거리', '${recommendation.distance.toStringAsFixed(1)}km'),
+              _buildInfoRow('상태', recommendation.status),
+              _buildInfoRow('혼잡도', recommendation.predictedCongestion),
+            ],
+          ),
+          
+          const SizedBox(height: 12),
+          
+          // 상세보기 버튼
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                // AI 추천에서 선택된 쉼터를 지도에서 표시
+                final shelter = Shelter(
+                  id: recommendation.id,
+                  name: recommendation.name,
+                  address: recommendation.address,
+                  distance: recommendation.distance,
+                  status: recommendation.status,
+                  predictedCongestion: recommendation.predictedCongestion,
+                  latitude: recommendation.latitude,
+                  longitude: recommendation.longitude,
+                  openingDays: '',
+                  maxCapacity: 0,
+                  facilities: recommendation.facilities,
+                  rating: 0.0,
+                  likes: 0,
+                  imageUrl: '',
+                  congestion: '',
+                );
+                
+                // HomeScreen의 _onShelterSelected 함수 호출
+                final homeScreen = context.findAncestorStateOfType<_HomeScreenState>();
+                homeScreen?._onShelterSelected(shelter);
+                
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${recommendation.name} 상세 정보를 지도에서 확인합니다.'),
+                    duration: const Duration(seconds: 1),
+                    backgroundColor: Colors.purple[600],
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.purple[600],
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 8),
+              ),
+              child: const Text('상세보기', style: TextStyle(fontSize: 12)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 1),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 60,
+            child: Text(
+              '• $label',
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey[600],
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 11,
+                color: Colors.black87,
+              ),
             ),
           ),
         ],
@@ -795,23 +894,46 @@ class ShelterListItem extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: OutlinedButton(
-                  onPressed: () {
-                    context.read<ShelterProvider>().toggleLike(shelter.id);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('${shelter.name}에 좋아요를 눌렀습니다!'),
-                        duration: const Duration(seconds: 1),
+                child: Consumer<ShelterProvider>(
+                  builder: (context, provider, child) {
+                    final isLiked = provider.isLiked(shelter.id);
+                    return ElevatedButton(
+                      onPressed: () async {
+                        await provider.toggleLike(shelter.id);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(isLiked 
+                              ? '${shelter.name} 좋아요를 취소했습니다.'
+                              : '${shelter.name}에 좋아요를 눌렀습니다!'),
+                            duration: const Duration(seconds: 1),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isLiked ? Colors.red[600] : Colors.white,
+                        foregroundColor: isLiked ? Colors.white : Colors.red[600],
+                        side: isLiked ? null : BorderSide(color: Colors.red[600]!),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            isLiked ? '🤍' : '❤️',
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            isLiked ? '좋아요 해제' : '좋아요', 
+                            style: const TextStyle(fontSize: 12)
+                          ),
+                        ],
                       ),
                     );
                   },
-                  style: OutlinedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                  ),
-                  child: const Text('좋아요', style: TextStyle(fontSize: 12)),
                 ),
               ),
             ],

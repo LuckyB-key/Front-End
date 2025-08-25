@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/shelter.dart';
 import '../services/shelter_service.dart';
 
@@ -25,6 +26,9 @@ class ShelterProvider with ChangeNotifier {
       _hasError = false;
       _errorMessage = '';
       notifyListeners();
+      
+      // 좋아요 상태 로드
+      await loadLikedShelters();
       
       final lat = latitude ?? 37.5665;
       final lng = longitude ?? 126.9780;
@@ -141,7 +145,7 @@ class ShelterProvider with ChangeNotifier {
   }
 
   // 좋아요 토글
-  void toggleLike(String shelterId) {
+  Future<void> toggleLike(String shelterId) async {
     if (_likedShelters.contains(shelterId)) {
       _likedShelters.remove(shelterId);
       print('❤️ 좋아요 해제: $shelterId');
@@ -149,6 +153,33 @@ class ShelterProvider with ChangeNotifier {
       _likedShelters.add(shelterId);
       print('❤️ 좋아요 추가: $shelterId');
     }
+    
+    // SharedPreferences에 저장
+    await _saveLikedShelters();
     notifyListeners();
+  }
+
+  // 좋아요 상태 로드
+  Future<void> loadLikedShelters() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final likedSheltersList = prefs.getStringList('liked_shelters') ?? [];
+      _likedShelters = likedSheltersList.toSet();
+      print('📱 저장된 좋아요 쉼터 로드: ${_likedShelters.length}개');
+      notifyListeners();
+    } catch (e) {
+      print('❌ 좋아요 상태 로드 실패: $e');
+    }
+  }
+
+  // 좋아요 상태 저장
+  Future<void> _saveLikedShelters() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList('liked_shelters', _likedShelters.toList());
+      print('💾 좋아요 상태 저장 완료: ${_likedShelters.length}개');
+    } catch (e) {
+      print('❌ 좋아요 상태 저장 실패: $e');
+    }
   }
 }
