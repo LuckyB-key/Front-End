@@ -56,6 +56,7 @@ class ShelterProvider with ChangeNotifier {
             print('   🏃 거리: ${shelter.distance}km');
             print('   🚦 상태: ${shelter.status}');
             print('   👥 혼잡도: ${shelter.predictedCongestion}');
+            print('   🖼️ 이미지 URL: ${shelter.imageUrl.isNotEmpty ? shelter.imageUrl : "없음"}');
             print('   ---');
             return shelter;
           }).toList();

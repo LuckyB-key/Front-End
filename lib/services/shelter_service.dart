@@ -109,4 +109,10 @@ class ShelterService {
     
     return await ApiService.get(endpoint);
   }
+
+  // 이미지 프록시 서비스 추가
+  static String getImageProxyUrl(String originalUrl) {
+    // 백엔드에서 제공하는 이미지 프록시 엔드포인트 사용
+    return 'http://43.201.63.235:8080/api/v1/image/proxy?url=${Uri.encodeComponent(originalUrl)}';
+  }
 }

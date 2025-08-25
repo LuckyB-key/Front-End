@@ -69,6 +69,7 @@ class _ShelterListState extends State<ShelterList> {
         await context.read<AiRecommendationProvider>().fetchAiRecommendations(
           latitude: position.latitude,
           longitude: position.longitude,
+          allShelters: context.read<ShelterProvider>().filteredShelters,
         );
       } catch (e) {
         print('❌ 위치 가져오기 실패 - 서울양재at센터로 기본 설정: $e');
@@ -88,7 +89,25 @@ class _ShelterListState extends State<ShelterList> {
     await context.read<AiRecommendationProvider>().fetchAiRecommendations(
       latitude: defaultLat,
       longitude: defaultLon,
+      allShelters: context.read<ShelterProvider>().filteredShelters,
     );
+  }
+
+
+
+  // 상태 색상 헬퍼 함수
+  Color _getStatusColor(String status) {
+    if (status.contains('이용가능')) {
+      return Colors.green[600]!;
+    } else if (status.contains('이용불가')) {
+      return Colors.red[600]!;
+    } else if (status.contains('점검중')) {
+      return Colors.orange[600]!;
+    } else if (status.contains('폐쇄')) {
+      return Colors.grey[600]!;
+    } else {
+      return Colors.grey[600]!;
+    }
   }
 
   @override
@@ -458,7 +477,8 @@ class _ShelterListState extends State<ShelterList> {
                           '상태: ${recommendation.status}',
                           style: TextStyle(
                             fontSize: 10,
-                            color: Colors.grey[600],
+                            color: _getStatusColor(recommendation.status),
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                         if (recommendation.facilities.isNotEmpty) ...[
@@ -479,6 +499,55 @@ class _ShelterListState extends State<ShelterList> {
                           style: TextStyle(
                             fontSize: 10,
                             color: Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // 상세보기 버튼
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              // AI 추천에서 해당 쉼터를 전체 쉼터 목록에서 찾기
+                              final shelterProvider = context.read<ShelterProvider>();
+                              final shelter = shelterProvider.shelters.firstWhere(
+                                (s) => s.id == recommendation.id,
+                                orElse: () => Shelter(
+                                  id: recommendation.id,
+                                  name: recommendation.name,
+                                  address: recommendation.address,
+                                  distance: recommendation.distance,
+                                  status: recommendation.status,
+                                  predictedCongestion: recommendation.predictedCongestion,
+                                  latitude: recommendation.latitude,
+                                  longitude: recommendation.longitude,
+                                  facilities: recommendation.facilities,
+                                ),
+                              );
+                              
+                              print('🏠 AI 추천 상세보기 버튼 클릭: ${shelter.name}');
+                              widget.onShelterSelected?.call(shelter);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('${shelter.name} 상세 정보를 지도에서 확인합니다.'),
+                                  duration: const Duration(seconds: 1),
+                                ),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.purple[600],
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                            ),
+                            child: const Text(
+                              '상세보기',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -599,6 +668,22 @@ class ShelterListItem extends StatelessWidget {
     required this.onTap,
   }) : super(key: key);
 
+
+
+  Color _getStatusColor(String status) {
+    if (status.contains('이용가능')) {
+      return Colors.green[600]!;
+    } else if (status.contains('이용불가')) {
+      return Colors.red[600]!;
+    } else if (status.contains('점검중')) {
+      return Colors.orange[600]!;
+    } else if (status.contains('폐쇄')) {
+      return Colors.grey[600]!;
+    } else {
+      return Colors.grey[600]!;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -691,12 +776,6 @@ class ShelterListItem extends StatelessWidget {
               _buildInfoRow('거리', '${shelter.distance.toStringAsFixed(1)}km'),
               _buildInfoRow('상태', shelter.status),
               _buildInfoRow('혼잡도', shelter.predictedCongestion),
-              // API에서 제공하지 않는 정보는 제거
-              // _buildInfoRow('개방 요일', shelter.openingDays),
-              // _buildInfoRow('최대 수용 인원', '${shelter.maxCapacity}명'),
-              // _buildInfoRow('시설', shelter.facilities.join(', ')),
-              // _buildInfoRow('리뷰', '${shelter.rating}점'),
-              // _buildInfoRow('좋아요', '${shelter.likes}개'),
             ],
           ),
           
@@ -709,8 +788,7 @@ class ShelterListItem extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: () {
                     print('🏠 상세보기 버튼 클릭: ${shelter.name}');
-                    // 상세 정보 보기 - 지도에 모달 표시
-                    onTap(); // 이 함수가 MapSection의 _showShelterModal을 호출해야 함
+                    onTap();
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text('${shelter.name} 상세 정보를 지도에서 확인합니다.'),
@@ -732,7 +810,6 @@ class ShelterListItem extends StatelessWidget {
               Expanded(
                 child: OutlinedButton(
                   onPressed: () {
-                    // 좋아요 토글
                     context.read<ShelterProvider>().toggleLike(shelter.id);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -757,6 +834,11 @@ class ShelterListItem extends StatelessWidget {
   }
 
   Widget _buildInfoRow(String label, String value) {
+    Color? textColor;
+    if (label == '상태') {
+      textColor = _getStatusColor(value);
+    }
+    
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
@@ -775,9 +857,10 @@ class ShelterListItem extends StatelessWidget {
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: Colors.black87,
+                color: textColor ?? Colors.black87,
+                fontWeight: label == '상태' ? FontWeight.w500 : FontWeight.normal,
               ),
             ),
           ),

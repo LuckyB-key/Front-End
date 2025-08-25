@@ -294,24 +294,63 @@ class _WeatherSectionState extends State<WeatherSection> {
   }
 }
 
-// AI 추천 섹션 위젯
+// AI 추천 섹션 위젯 수정
 class AiRecommendationSection extends StatefulWidget {
   @override
   State<AiRecommendationSection> createState() => _AiRecommendationSectionState();
 }
 
 class _AiRecommendationSectionState extends State<AiRecommendationSection> {
+  bool _isInitialized = false;
+
   @override
   void initState() {
     super.initState();
-    _loadAiRecommendations();
+    // 전체 쉼터 로드 완료 후 AI 추천 실행
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _waitForSheltersAndLoadAiRecommendations();
+    });
   }
 
-  Future<void> _loadAiRecommendations() async {
+  // 전체 쉼터 로드 완료 후 AI 추천 실행
+  void _waitForSheltersAndLoadAiRecommendations() {
+    final shelterProvider = context.read<ShelterProvider>();
+    
+    if (shelterProvider.isLoading) {
+      // 쉼터 로딩 중이면 잠시 후 다시 확인
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          _waitForSheltersAndLoadAiRecommendations();
+        }
+      });
+      return;
+    }
+
+    if (shelterProvider.hasError) {
+      print('⚠️ 쉼터 로드 실패로 AI 추천을 생성할 수 없습니다.');
+      return;
+    }
+
+    if (shelterProvider.filteredShelters.isEmpty) {
+      print('⚠️ 쉼터 데이터가 없어 AI 추천을 생성할 수 없습니다.');
+      return;
+    }
+
+    // 전체 쉼터 로드 완료 후 AI 추천 실행
+    print('✅ 전체 쉼터 로드 완료 (${shelterProvider.filteredShelters.length}개) - AI 추천 시작');
+    _loadAiRecommendations(shelterProvider.filteredShelters);
+  }
+
+  Future<void> _loadAiRecommendations(List<Shelter> allShelters) async {
+    if (_isInitialized) return; // 중복 실행 방지
+    
     try {
+      _isInitialized = true;
+      print('🏠 AI 추천 시작 - 전체 쉼터 ${allShelters.length}개 기반');
+
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        _fetchAiRecommendationsWithDefaultLocation();
+        _fetchAiRecommendationsWithDefaultLocation(allShelters);
         return;
       }
 
@@ -319,13 +358,13 @@ class _AiRecommendationSectionState extends State<AiRecommendationSection> {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          _fetchAiRecommendationsWithDefaultLocation();
+          _fetchAiRecommendationsWithDefaultLocation(allShelters);
           return;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        _fetchAiRecommendationsWithDefaultLocation();
+        _fetchAiRecommendationsWithDefaultLocation(allShelters);
         return;
       }
 
@@ -339,22 +378,24 @@ class _AiRecommendationSectionState extends State<AiRecommendationSection> {
         await context.read<AiRecommendationProvider>().fetchAiRecommendations(
           latitude: position.latitude,
           longitude: position.longitude,
+          allShelters: allShelters,
         );
       } catch (e) {
-        _fetchAiRecommendationsWithDefaultLocation();
+        _fetchAiRecommendationsWithDefaultLocation(allShelters);
       }
     } catch (e) {
-      _fetchAiRecommendationsWithDefaultLocation();
+      print('❌ AI 추천 로드 오류: $e');
     }
   }
 
-  Future<void> _fetchAiRecommendationsWithDefaultLocation() async {
+  Future<void> _fetchAiRecommendationsWithDefaultLocation(List<Shelter> allShelters) async {
     const double defaultLat = 37.4692;
     const double defaultLon = 127.0334;
     
     await context.read<AiRecommendationProvider>().fetchAiRecommendations(
       latitude: defaultLat,
       longitude: defaultLon,
+      allShelters: allShelters,
     );
   }
 
@@ -395,8 +436,52 @@ class _AiRecommendationSectionState extends State<AiRecommendationSection> {
           
           // AI 추천 리스트
           Expanded(
-            child: Consumer<AiRecommendationProvider>(
-              builder: (context, aiProvider, child) {
+            child: Consumer2<ShelterProvider, AiRecommendationProvider>(
+              builder: (context, shelterProvider, aiProvider, child) {
+                // 전체 쉼터가 로딩 중이거나 에러인 경우
+                if (shelterProvider.isLoading) {
+                  return const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 8),
+                        Text('쉼터 정보를 불러오는 중...'),
+                      ],
+                    ),
+                  );
+                }
+
+                if (shelterProvider.hasError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.error_outline, color: Colors.red[400], size: 24),
+                        const SizedBox(height: 8),
+                        Text(
+                          '쉼터 정보를 불러올 수 없습니다',
+                          style: TextStyle(color: Colors.red[600], fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                if (shelterProvider.filteredShelters.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.location_off, size: 24, color: Colors.grey),
+                        const SizedBox(height: 8),
+                        Text('주변에 쉼터가 없습니다', style: TextStyle(fontSize: 12)),
+                      ],
+                    ),
+                  );
+                }
+
+                // AI 추천 상태 확인
                 if (aiProvider.isLoading) {
                   return const Center(
                     child: Column(
@@ -423,7 +508,10 @@ class _AiRecommendationSectionState extends State<AiRecommendationSection> {
                         ),
                         const SizedBox(height: 8),
                         ElevatedButton(
-                          onPressed: _loadAiRecommendations,
+                          onPressed: () {
+                            _isInitialized = false; // 재시도 허용
+                            _waitForSheltersAndLoadAiRecommendations();
+                          },
                           child: const Text('다시 시도'),
                         ),
                       ],
@@ -455,12 +543,12 @@ class _AiRecommendationSectionState extends State<AiRecommendationSection> {
                       shelter: Shelter(
                         id: recommendation.id,
                         name: recommendation.name,
-                        address: 'AI 추천 쉼터',
+                        address: recommendation.address, // 실제 주소 사용 (AI 추천 쉼터가 아닌)
                         distance: recommendation.distance,
                         status: recommendation.status,
                         predictedCongestion: recommendation.predictedCongestion,
-                        latitude: 0.0,
-                        longitude: 0.0,
+                        latitude: recommendation.latitude, // 실제 위도 사용
+                        longitude: recommendation.longitude, // 실제 경도 사용
                         openingDays: '',
                         maxCapacity: 0,
                         facilities: recommendation.facilities,
@@ -470,11 +558,34 @@ class _AiRecommendationSectionState extends State<AiRecommendationSection> {
                         congestion: '',
                       ),
                       onTap: () {
-                        // AI 추천 쉼터 클릭 시 처리
+                        // AI 추천에서 선택된 쉼터를 지도에서 표시
+                        final shelter = Shelter(
+                          id: recommendation.id,
+                          name: recommendation.name,
+                          address: recommendation.address,
+                          distance: recommendation.distance,
+                          status: recommendation.status,
+                          predictedCongestion: recommendation.predictedCongestion,
+                          latitude: recommendation.latitude,
+                          longitude: recommendation.longitude,
+                          openingDays: '',
+                          maxCapacity: 0,
+                          facilities: recommendation.facilities,
+                          rating: 0.0,
+                          likes: 0,
+                          imageUrl: '',
+                          congestion: '',
+                        );
+                        
+                        // HomeScreen의 _onShelterSelected 함수 호출
+                        final homeScreen = context.findAncestorStateOfType<_HomeScreenState>();
+                        homeScreen?._onShelterSelected(shelter);
+                        
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('${recommendation.name} 상세 정보를 확인합니다.'),
+                            content: Text('${recommendation.name} 상세 정보를 지도에서 확인합니다.'),
                             duration: const Duration(seconds: 1),
+                            backgroundColor: Colors.purple[600],
                           ),
                         );
                       },
