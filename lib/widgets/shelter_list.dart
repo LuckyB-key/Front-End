@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/shelter_provider.dart';
 import '../providers/weather_provider.dart';
+import '../providers/ai_recommendation_provider.dart'; // AI 추천 Provider 추가
 import '../models/shelter.dart';
+import '../models/ai_recommendation.dart'; // AI 추천 모델 추가
+import 'package:geolocator/geolocator.dart'; // 위치 서비스 추가
 
 class ShelterList extends StatefulWidget {
   final Function(Shelter)? onShelterSelected;
@@ -20,10 +23,72 @@ class _ShelterListState extends State<ShelterList> {
   @override
   void initState() {
     super.initState();
-    // 날씨 정보 로드
+    // 날씨 정보와 AI 추천 데이터 로드
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<WeatherProvider>().fetchWeatherByLocation();
+      _loadAiRecommendations();
     });
+  }
+
+  // AI 추천 데이터 로드
+  Future<void> _loadAiRecommendations() async {
+    try {
+      // 현재 위치 가져오기
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        print('❌ 위치 서비스 비활성화 - 서울양재at센터로 기본 설정');
+        _fetchAiRecommendationsWithDefaultLocation();
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          print('❌ 위치 권한 거부 - 서울양재at센터로 기본 설정');
+          _fetchAiRecommendationsWithDefaultLocation();
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        print('❌ 위치 권한 영구 거부 - 서울양재at센터로 기본 설정');
+        _fetchAiRecommendationsWithDefaultLocation();
+        return;
+      }
+
+      // 고정밀 위치 가져오기
+      try {
+        final position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+          timeLimit: const Duration(seconds: 10),
+        );
+        
+        print('✅ 위치 획득 성공 - AI 추천 데이터 로드');
+        context.read<AiRecommendationProvider>().setCurrentPosition(position);
+        await context.read<AiRecommendationProvider>().fetchAiRecommendations(
+          latitude: position.latitude,
+          longitude: position.longitude,
+        );
+      } catch (e) {
+        print('❌ 위치 가져오기 실패 - 서울양재at센터로 기본 설정: $e');
+        _fetchAiRecommendationsWithDefaultLocation();
+      }
+    } catch (e) {
+      print('❌ AI 추천 데이터 로드 오류: $e');
+      _fetchAiRecommendationsWithDefaultLocation();
+    }
+  }
+
+  // 기본 위치로 AI 추천 데이터 로드
+  Future<void> _fetchAiRecommendationsWithDefaultLocation() async {
+    const double defaultLat = 37.4692; // 서울양재at센터
+    const double defaultLon = 127.0334;
+    
+    await context.read<AiRecommendationProvider>().fetchAiRecommendations(
+      latitude: defaultLat,
+      longitude: defaultLon,
+    );
   }
 
   @override
@@ -39,7 +104,7 @@ class _ShelterListState extends State<ShelterList> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 온도/습도 섹션
+          // 온도/습도 섹션 (기존 코드 유지)
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -57,7 +122,7 @@ class _ShelterListState extends State<ShelterList> {
                 },
               ),
               const SizedBox(height: 12),
-              // 온도/습도 컨테이너
+              // 온도/습도 컨테이너 (기존 코드 유지)
               Consumer<WeatherProvider>(
                 builder: (context, weatherProvider, child) {
                   if (weatherProvider.isLoading) {
@@ -238,19 +303,202 @@ class _ShelterListState extends State<ShelterList> {
           
           const SizedBox(height: 24),
           
-          // 제목
-          const Text(
-            'AI 추천 쉼터',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
+          // AI 추천 섹션
+          Row(
+            children: [
+              Icon(
+                Icons.psychology,
+                color: Colors.purple[600],
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'AI 추천 쉼터',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // AI 추천 리스트
+          Consumer<AiRecommendationProvider>(
+            builder: (context, aiProvider, child) {
+              if (aiProvider.isLoading) {
+                return Container(
+                  height: 120,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey[200]!),
+                  ),
+                  child: const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 8),
+                        Text('AI 추천을 분석하는 중...'),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              if (aiProvider.hasError) {
+                return Container(
+                  height: 120,
+                  decoration: BoxDecoration(
+                    color: Colors.red[50],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.red[200]!),
+                  ),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.error_outline, color: Colors.red[400], size: 32),
+                        const SizedBox(height: 8),
+                        Text(
+                          'AI 추천을 불러올 수 없습니다',
+                          style: TextStyle(color: Colors.red[600]),
+                        ),
+                        const SizedBox(height: 8),
+                        ElevatedButton(
+                          onPressed: _loadAiRecommendations,
+                          child: const Text('다시 시도'),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              if (aiProvider.recommendations.isEmpty) {
+                return Container(
+                  height: 120,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey[200]!),
+                  ),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.psychology_outlined, size: 32, color: Colors.grey),
+                        const SizedBox(height: 8),
+                        Text('AI 추천 쉼터가 없습니다'),
+                        const SizedBox(height: 4),
+                        Text('현재 위치에서 추천할 쉼터를 찾지 못했습니다', 
+                             style: TextStyle(color: Colors.grey[600])),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              return Container(
+                height: 120,
+                decoration: BoxDecoration(
+                  color: Colors.purple[50],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.purple[200]!),
+                ),
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.all(12),
+                  itemCount: aiProvider.recommendations.length,
+                  itemBuilder: (context, index) {
+                    final recommendation = aiProvider.recommendations[index];
+                    return Container(
+                      width: 200,
+                      margin: const EdgeInsets.only(right: 12),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.purple[300]!),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.star,
+                                color: Colors.purple[600],
+                                size: 16,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'AI 추천 ${index + 1}',
+                                style: TextStyle(
+                                  color: Colors.purple[600],
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            recommendation.message.isNotEmpty 
+                                ? recommendation.message 
+                                : 'AI가 추천하는 쉼터입니다',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '추천 이유: ${recommendation.additionalProps.length}개 항목',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
           ),
           
           const SizedBox(height: 24),
           
-          // 쉘터 리스트
+          // 전체 쉼터 섹션
+          Row(
+            children: [
+              Icon(
+                Icons.location_on,
+                color: Colors.blue[600],
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                '전체 쉼터',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // 전체 쉼터 리스트
           Expanded(
             child: Consumer<ShelterProvider>(
               builder: (context, shelterProvider, child) {
@@ -313,7 +561,7 @@ class _ShelterListState extends State<ShelterList> {
                     final shelter = shelterProvider.filteredShelters[index];
                     return ShelterListItem(
                       shelter: shelter,
-                      onTap: () => widget.onShelterSelected?.call(shelter), // null 체크 추가
+                      onTap: () => widget.onShelterSelected?.call(shelter),
                     );
                   },
                 );

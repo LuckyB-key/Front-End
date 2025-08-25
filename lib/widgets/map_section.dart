@@ -7,6 +7,8 @@ import '../models/review.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:image_picker/image_picker.dart';
+import '../screens/qr_checkin_screen.dart';
 
 class MapSection extends StatefulWidget {
   final Shelter? selectedShelter;
@@ -133,32 +135,32 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
 
       // 고정밀 위치 가져오기만 시도
       try {
-        final position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high,
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
           timeLimit: const Duration(seconds: 10),
-        );
+      );
         
         print('✅ 고정밀 위치 획득 성공');
 
-        setState(() {
-          _currentPosition = position;
-          _isLoadingLocation = false;
-        });
+      setState(() {
+        _currentPosition = position;
+        _isLoadingLocation = false;
+      });
 
-        // 지도를 현재 위치로 이동
-        final latLng = LatLng(position.latitude, position.longitude);
-        _mapController.move(latLng, 15.0);
+      // 지도를 현재 위치로 이동
+      final latLng = LatLng(position.latitude, position.longitude);
+      _mapController.move(latLng, 15.0);
 
-        // 성공 메시지 표시
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+      // 성공 메시지 표시
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
             content: Text('현재 위치로 이동했습니다 (${position.accuracy.toStringAsFixed(0)}m 정확도)'),
-            backgroundColor: Colors.green[600],
-            duration: const Duration(seconds: 2),
-          ),
-        );
+          backgroundColor: Colors.green[600],
+          duration: const Duration(seconds: 2),
+        ),
+      );
 
-      } catch (e) {
+    } catch (e) {
         print('❌ 고정밀 위치 실패: $e - 서울양재at센터로 이동');
         _moveToDefaultLocation();
       }
@@ -171,10 +173,10 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
 
   // 서울양재at센터 기본 위치로 이동
   void _moveToDefaultLocation() {
-    setState(() {
-      _isLoadingLocation = false;
-    });
-
+      setState(() {
+        _isLoadingLocation = false;
+      });
+      
     // 서울양재at센터 좌표 (위도: 37.4692, 경도: 127.0334)
     const double defaultLat = 37.4692;
     const double defaultLon = 127.0334;
@@ -274,9 +276,9 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
           ),
           child: Container(
             padding: const EdgeInsets.all(24),
-            child: Column(
+      child: Column(
               mainAxisSize: MainAxisSize.min,
-              children: [
+        children: [
                 // 모달 헤더
                 Row(
                   children: [
@@ -291,9 +293,9 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
                         '${_localSelectedShelter!.name} 리뷰',
                         style: const TextStyle(
                           fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
                       ),
                     ),
                     IconButton(
@@ -309,7 +311,7 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
                 // 리뷰 목록 - 실제 API 데이터 사용
                 Container(
                   height: 300,
-                  decoration: BoxDecoration(
+              decoration: BoxDecoration(
                     color: Colors.grey[50],
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: Colors.grey[200]!),
@@ -326,7 +328,7 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
                         return Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
+                children: [
                               Icon(Icons.error_outline, size: 48, color: Colors.red),
                               const SizedBox(height: 8),
                               const Text('리뷰를 불러올 수 없습니다'),
@@ -408,9 +410,9 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
                                           color: Colors.grey[600],
                                           fontSize: 12,
                                         ),
-                                      ),
-                                    ],
-                                  ),
+                        ),
+                    ],
+                  ),
                                   // 사진이 있으면 표시
                                   if (review.photoUrls.isNotEmpty) ...[
                                     const SizedBox(height: 8),
@@ -423,8 +425,8 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
                                           return Container(
                                             margin: const EdgeInsets.only(right: 8),
                                             width: 60,
-                                            decoration: BoxDecoration(
-                                              borderRadius: BorderRadius.circular(8),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
                                               image: DecorationImage(
                                                 image: NetworkImage(review.photoUrls[photoIndex]),
                                                 fit: BoxFit.cover,
@@ -464,13 +466,13 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
                       backgroundColor: Colors.blue[600],
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(8),
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
+                              ),
+                            ],
+                          ),
           ),
         );
       },
@@ -526,9 +528,9 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
                   hintText: '이 쉼터에 대한 솔직한 리뷰를 작성해주세요.',
                   border: OutlineInputBorder(),
                 ),
-              ),
-            ],
-          ),
+                              ),
+                            ],
+                          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -550,10 +552,10 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
                 }
               },
               child: const Text('작성'),
-            ),
-          ],
-        ),
-      ),
+                        ),
+                      ],
+                    ),
+                  ),
     );
   }
 
@@ -601,7 +603,7 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
         title: const Text('체크인 코드 입력'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
-          children: [
+                          children: [
             Text('${_localSelectedShelter!.name}에 체크인하시겠습니까?'),
             const SizedBox(height: 16),
             TextField(
@@ -620,15 +622,15 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
               ),
             ),
             const SizedBox(height: 8),
-            Text(
+                            Text(
               '쉼터에 표시된 6자리 코드를 입력해주세요',
-              style: TextStyle(
-                fontSize: 12,
+                              style: TextStyle(
+                                fontSize: 12,
                 color: Colors.grey[600],
-              ),
-            ),
-          ],
-        ),
+                              ),
+                            ),
+                          ],
+                        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -712,13 +714,15 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
     );
   }
 
-  // 카메라 체크인 (기능 미구현)
+  // 카메라 체크인 (QR 스캔)
   void _showCameraCheckin() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${_localSelectedShelter!.name} 카메라 체크인 기능은 준비 중입니다.'),
-        backgroundColor: Colors.blue[600],
-        duration: const Duration(seconds: 2),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => QRCheckinScreen(
+          shelterName: _localSelectedShelter!.name,
+          shelterId: _localSelectedShelter!.id,
+        ),
       ),
     );
   }
@@ -947,7 +951,7 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
                                               ),
                                               label: Text(
                                                 isLiked ? '좋아요 해제' : '좋아요',
-                                                style: TextStyle(
+                                        style: TextStyle(
                                                   color: isLiked ? Colors.white : Colors.red[400],
                                                   fontWeight: FontWeight.w600,
                                                   fontSize: 12,
@@ -984,10 +988,10 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
                                           ),
                                           label: Text(
                                             '리뷰',
-                                        style: TextStyle(
+                                              style: TextStyle(
                                               color: Colors.blue[600],
                                               fontWeight: FontWeight.w600,
-                                              fontSize: 12,
+                                                fontSize: 12,
                                             ),
                                           ),
                                           style: OutlinedButton.styleFrom(
@@ -1041,9 +1045,9 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
                             ),
                           ),
                         ],
+                        ),
                       ),
                     ),
-                  ),
                 ),
               ),
             
@@ -1064,9 +1068,9 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
                           color: Colors.black.withOpacity(0.1),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
+          ),
+        ],
+      ),
                     child: IconButton(
                       onPressed: _isLoadingLocation ? null : _moveToCurrentLocation,
                       icon: _isLoadingLocation 
@@ -1087,14 +1091,14 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(8),
-                      boxShadow: [
-                        BoxShadow(
+                boxShadow: [
+                  BoxShadow(
                           color: Colors.black.withOpacity(0.1),
-                          blurRadius: 8,
+                    blurRadius: 8,
                           offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+                  ),
+                ],
+              ),
                     child: IconButton(
                       onPressed: _zoomIn,
                       icon: const Icon(Icons.add),
@@ -1107,7 +1111,7 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
                   // 줌 아웃 버튼
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                color: Colors.white,
                       borderRadius: BorderRadius.circular(8),
                 boxShadow: [
                   BoxShadow(

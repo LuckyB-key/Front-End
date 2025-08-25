@@ -4,6 +4,7 @@ import 'screens/home_screen.dart';
 import 'providers/shelter_provider.dart';
 import 'providers/review_provider.dart';
 import 'providers/weather_provider.dart';
+import 'providers/ai_recommendation_provider.dart'; // AI 추천 Provider 추가
 
 void main() {
   runApp(const NotHotspotApp());
@@ -19,6 +20,7 @@ class NotHotspotApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ShelterProvider()),
         ChangeNotifierProvider(create: (_) => ReviewProvider()),
         ChangeNotifierProvider(create: (_) => WeatherProvider()),
+        ChangeNotifierProvider(create: (_) => AiRecommendationProvider()), // AI 추천 Provider 추가
       ],
       child: MaterialApp(
         title: 'Not-Hotspot',
