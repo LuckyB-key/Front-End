@@ -1,15 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/shelter_provider.dart';
+import '../providers/weather_provider.dart';
 import '../models/shelter.dart';
 
-class ShelterList extends StatelessWidget {
+class ShelterList extends StatefulWidget {
   final Function(Shelter)? onShelterSelected;
   
   const ShelterList({
     super.key,
     this.onShelterSelected,
   });
+
+  @override
+  State<ShelterList> createState() => _ShelterListState();
+}
+
+class _ShelterListState extends State<ShelterList> {
+  @override
+  void initState() {
+    super.initState();
+    // 날씨 정보 로드
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<WeatherProvider>().fetchWeatherByLocation();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,130 +44,194 @@ class ShelterList extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // "현재 위치의" 텍스트
-              Text(
-                '현재 대구는',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
+              Consumer<WeatherProvider>(
+                builder: (context, weatherProvider, child) {
+                  return Text(
+                    '현재 ${weatherProvider.city}는',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 12),
               // 온도/습도 컨테이너
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.grey[200]!,
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    // 온도 컨테이너
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.orange[200]!,
-                            width: 1,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.03),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
+              Consumer<WeatherProvider>(
+                builder: (context, weatherProvider, child) {
+                  if (weatherProvider.isLoading) {
+                    return Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.grey[200]!,
+                          width: 1,
                         ),
+                      ),
+                      child: const Center(
                         child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
-                              Icons.thermostat,
-                              color: Colors.orange[600],
-                              size: 28,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              '23°C',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.orange[600],
-                              ),
-                            ),
-                            Text(
-                              '온도',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.orange[700],
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
+                            CircularProgressIndicator(),
+                            SizedBox(height: 8),
+                            Text('날씨 정보를 불러오는 중...'),
                           ],
                         ),
                       ),
-                    ),
-                    
-                    const SizedBox(width: 12),
-                    
-                    // 습도 컨테이너
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.blue[200]!,
-                            width: 1,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.03),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.water_drop,
-                              color: Colors.blue[600],
-                              size: 28,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              '65%',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.blue[600],
-                              ),
-                            ),
-                            Text(
-                              '습도',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.blue[700],
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
+                    );
+                  }
+
+                  if (weatherProvider.hasError) {
+                    return Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.red[200]!,
+                          width: 1,
                         ),
                       ),
+                      child: Column(
+                        children: [
+                          Icon(Icons.error_outline, color: Colors.red[400], size: 32),
+                          const SizedBox(height: 8),
+                          Text(
+                            '날씨 정보를 불러올 수 없습니다',
+                            style: TextStyle(color: Colors.red[600]),
+                          ),
+                          const SizedBox(height: 8),
+                          ElevatedButton(
+                            onPressed: () {
+                              weatherProvider.fetchWeatherByLocation();
+                            },
+                            child: const Text('다시 시도'),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.grey[200]!,
+                        width: 1,
+                      ),
                     ),
-                  ],
-                ),
+                    child: Row(
+                      children: [
+                        // 온도 컨테이너
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.orange[200]!,
+                                width: 1,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.03),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.thermostat,
+                                  color: Colors.orange[600],
+                                  size: 28,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  '${weatherProvider.temperature.round()}°C',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.orange[600],
+                                  ),
+                                ),
+                                Text(
+                                  '온도',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.orange[700],
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        
+                        const SizedBox(width: 12),
+                        
+                        // 습도 컨테이너
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.blue[200]!,
+                                width: 1,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.03),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.water_drop,
+                                  color: Colors.blue[600],
+                                  size: 28,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  '${weatherProvider.humidity}%',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue[600],
+                                  ),
+                                ),
+                                Text(
+                                  '습도',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.blue[700],
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -234,7 +313,7 @@ class ShelterList extends StatelessWidget {
                     final shelter = shelterProvider.filteredShelters[index];
                     return ShelterListItem(
                       shelter: shelter,
-                      onTap: () => onShelterSelected?.call(shelter), // null 체크 추가
+                      onTap: () => widget.onShelterSelected?.call(shelter), // null 체크 추가
                     );
                   },
                 );

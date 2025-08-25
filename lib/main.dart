@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'screens/home_screen.dart';
 import 'providers/shelter_provider.dart';
 import 'providers/review_provider.dart';
+import 'providers/weather_provider.dart';
 
 void main() {
   runApp(const NotHotspotApp());
@@ -17,6 +18,7 @@ class NotHotspotApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => ShelterProvider()),
         ChangeNotifierProvider(create: (_) => ReviewProvider()),
+        ChangeNotifierProvider(create: (_) => WeatherProvider()),
       ],
       child: MaterialApp(
         title: 'Not-Hotspot',

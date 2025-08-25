@@ -106,58 +106,139 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
     });
 
     try {
+      // 위치 서비스가 활성화되어 있는지 확인
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        print('위치 서비스 비활성화 - 서울 양재로 이동');
+        _moveToDefaultLocation();
+        return;
+      }
+
       // 위치 권한 확인
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          _showLocationPermissionDialog();
+          print('위치 권한 거부 - 서울 양재로 이동');
+          _moveToDefaultLocation();
           return;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        _showLocationPermissionDialog();
+        print('위치 권한 영구 거부 - 서울 양재로 이동');
+        _moveToDefaultLocation();
         return;
       }
 
-      // 현재 위치 가져오기
-      final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
+      // 현재 위치 가져오기 (여러 방법 시도)
+      Position? position;
+      
+      try {
+        // 방법 1: 고정밀 위치 (타임아웃 10초)
+        position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+          timeLimit: const Duration(seconds: 10),
+        );
+        print('✅ 고정밀 위치 획득 성공');
+      } catch (e) {
+        print('⚠️ 고정밀 위치 실패, 중간 정밀도 시도: $e');
+        
+        try {
+          // 방법 2: 중간 정밀도 위치 (타임아웃 15초)
+          position = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.medium,
+            timeLimit: const Duration(seconds: 15),
+          );
+          print('✅ 중간 정밀도 위치 획득 성공');
+        } catch (e) {
+          print('⚠️ 중간 정밀도 위치 실패, 낮은 정밀도 시도: $e');
+          
+          try {
+            // 방법 3: 낮은 정밀도 위치 (타임아웃 20초)
+            position = await Geolocator.getCurrentPosition(
+              desiredAccuracy: LocationAccuracy.low,
+              timeLimit: const Duration(seconds: 20),
+            );
+            print('✅ 낮은 정밀도 위치 획득 성공');
+          } catch (e) {
+            print('❌ 모든 위치 정밀도 실패: $e');
+            throw e;
+          }
+        }
+      }
 
-      setState(() {
-        _currentPosition = position;
-        _isLoadingLocation = false;
-      });
+      if (position != null) {
+        setState(() {
+          _currentPosition = position;
+          _isLoadingLocation = false;
+        });
 
-      // 지도를 현재 위치로 이동
-      final latLng = LatLng(position.latitude, position.longitude);
-      _mapController.move(latLng, 15.0);
+        // 지도를 현재 위치로 이동
+        final latLng = LatLng(position.latitude, position.longitude);
+        _mapController.move(latLng, 15.0);
 
-      // 성공 메시지 표시
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('현재 위치로 이동했습니다'),
-          backgroundColor: Colors.green[600],
-          duration: const Duration(seconds: 2),
-        ),
-      );
+        // 성공 메시지 표시
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('현재 위치로 이동했습니다 (${position.accuracy.toStringAsFixed(0)}m 정확도)'),
+            backgroundColor: Colors.green[600],
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      } else {
+        throw Exception('위치 정보를 가져올 수 없습니다.');
+      }
 
     } catch (e) {
-      setState(() {
-        _isLoadingLocation = false;
-      });
-      
-      // 에러 메시지 표시
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('위치를 가져올 수 없습니다: $e'),
-          backgroundColor: Colors.red[600],
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      print('❌ 위치 정보 가져오기 실패: $e - 서울 양재로 이동');
+      _moveToDefaultLocation();
     }
+  }
+
+  // 서울 양재 기본 위치로 이동
+  void _moveToDefaultLocation() {
+    setState(() {
+      _isLoadingLocation = false;
+    });
+
+    // 서울 양재 좌표 (위도: 37.4692, 경도: 127.0334)
+    const double defaultLat = 37.4692;
+    const double defaultLon = 127.0334;
+    
+    // 기본 위치 설정 (Position 객체 생성)
+    _currentPosition = Position(
+      latitude: defaultLat,
+      longitude: defaultLon,
+      timestamp: DateTime.now(),
+      accuracy: 1000, // 1km 정확도로 설정
+      altitude: 0,
+      heading: 0,
+      speed: 0,
+      speedAccuracy: 0,
+      altitudeAccuracy: 0,
+      headingAccuracy: 0,
+    );
+
+    // 지도를 서울 양재로 이동
+    final latLng = LatLng(defaultLat, defaultLon);
+    _mapController.move(latLng, 15.0);
+
+    // 안내 메시지 표시
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('위치 서비스를 사용할 수 없어 서울 양재로 이동했습니다'),
+        backgroundColor: Colors.orange[600],
+        duration: const Duration(seconds: 3),
+        action: SnackBarAction(
+          label: '설정',
+          textColor: Colors.white,
+          onPressed: () {
+            Geolocator.openAppSettings();
+          },
+        ),
+      ),
+    );
   }
 
   // 위치 권한 다이얼로그 표시
