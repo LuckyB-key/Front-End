@@ -63,28 +63,50 @@ class _HomeScreenState extends State<HomeScreen> {
                       // 왼쪽: 날씨 + AI 추천 (세로 배치)
                       Expanded(
                         flex: 1,
-                        child: Column(
-                          children: [
-                            // 날씨 섹션
-                            Expanded(
-                              flex: 1,
-                              child: WeatherSection(),
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            border: Border(
+                              right: BorderSide(color: Color(0xFFD1D5DB), width: 2),
                             ),
-                            
-                            // AI 추천 섹션
-                            Expanded(
-                              flex: 2,
-                              child: AiRecommendationSection(),
-                            ),
-                          ],
+                          ),
+                          child: Column(
+                            children: [
+                              // 날씨 섹션
+                              Expanded(
+                                flex: 1,
+                                child: WeatherSection(),
+                              ),
+                              
+                              // 구분선
+                              Container(
+                                height: 2,
+                                color: const Color(0xFFD1D5DB),
+                              ),
+                              
+                              // AI 추천 섹션
+                              Expanded(
+                                flex: 2,
+                                child: AiRecommendationSection(),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
 
                       // 중앙: 전체 쉼터 리스트
                       Expanded(
                         flex: 1,
-                        child: AllSheltersSection(
-                          onShelterSelected: _onShelterSelected,
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            border: Border(
+                              right: BorderSide(color: Color(0xFFD1D5DB), width: 2),
+                            ),
+                          ),
+                          child: AllSheltersSection(
+                            onShelterSelected: _onShelterSelected,
+                          ),
                         ),
                       ),
 
@@ -135,10 +157,6 @@ class _WeatherSectionState extends State<WeatherSection> {
       padding: const EdgeInsets.all(16),
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          right: BorderSide(color: Color(0xFFE9ECEF), width: 1),
-          bottom: BorderSide(color: Color(0xFFE9ECEF), width: 1),
-        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -406,9 +424,6 @@ class _AiRecommendationSectionState extends State<AiRecommendationSection> {
       padding: const EdgeInsets.all(16),
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          right: BorderSide(color: Color(0xFFE9ECEF), width: 1),
-        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -715,9 +730,6 @@ class AllSheltersSection extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          right: BorderSide(color: Color(0xFFE9ECEF), width: 1),
-        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -801,8 +813,15 @@ class AllSheltersSection extends StatelessWidget {
                   );
                 }
                 
-                return ListView.builder(
+                return ListView.separated(
                   itemCount: shelterProvider.filteredShelters.length,
+                  separatorBuilder: (context, index) {
+                    return Container(
+                      height: 1,
+                      margin: const EdgeInsets.symmetric(horizontal: 16),
+                      color: const Color.fromARGB(255, 170, 171, 173),
+                    );
+                  },
                   itemBuilder: (context, index) {
                     final shelter = shelterProvider.filteredShelters[index];
                     return ShelterListItem(
@@ -834,7 +853,7 @@ class ShelterListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 8, top: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
