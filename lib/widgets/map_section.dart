@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/shelter_provider.dart';
+import '../providers/review_provider.dart';
 import '../models/shelter.dart';
-import 'shelter_detail_modal.dart';
+import '../models/review.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
@@ -198,6 +199,9 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
   void _closeModal() {
     // 모달 닫기 애니메이션
     _modalAnimationController.reverse().then((_) {
+      setState(() {
+        _localSelectedShelter = null; // 로컬 상태도 초기화
+      });
       if (widget.onShelterDeselected != null) {
         widget.onShelterDeselected!();
       }
@@ -212,6 +216,338 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
     
     // 선택된 쉼터로 지도 중심 이동
     _moveToShelter(shelter);
+  }
+
+  // 리뷰 모달 표시 함수 - 실제 API 데이터 사용
+  void _showReviewModal() {
+    // 리뷰 데이터 로드
+    context.read<ReviewProvider>().fetchReviews(_localSelectedShelter!.id);
+    
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 모달 헤더
+                Row(
+                  children: [
+                    Icon(
+                      Icons.rate_review,
+                      color: Colors.blue[600],
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        '${_localSelectedShelter!.name} 리뷰',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close),
+                      color: Colors.grey[600],
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 20),
+                
+                // 리뷰 목록 - 실제 API 데이터 사용
+                Container(
+                  height: 300,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey[200]!),
+                  ),
+                  child: Consumer<ReviewProvider>(
+                    builder: (context, reviewProvider, child) {
+                      if (reviewProvider.isLoading) {
+                        return const Center(
+                          child: CircularProgressIndicator(),
+                        );
+                      }
+                      
+                      if (reviewProvider.hasError) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.error_outline, size: 48, color: Colors.red),
+                              const SizedBox(height: 8),
+                              const Text('리뷰를 불러올 수 없습니다'),
+                              const SizedBox(height: 8),
+                              ElevatedButton(
+                                onPressed: () {
+                                  reviewProvider.fetchReviews(_localSelectedShelter!.id);
+                                },
+                                child: const Text('다시 시도'),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+                      
+                      if (reviewProvider.reviews.isEmpty) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.rate_review_outlined, size: 48, color: Colors.grey),
+                              const SizedBox(height: 8),
+                              const Text('아직 리뷰가 없습니다'),
+                              const SizedBox(height: 4),
+                              Text('첫 번째 리뷰를 작성해보세요!', 
+                                   style: TextStyle(color: Colors.grey[600])),
+                            ],
+                          ),
+                        );
+                      }
+                      
+                      return ListView.builder(
+                        itemCount: reviewProvider.reviews.length,
+                        itemBuilder: (context, index) {
+                          final review = reviewProvider.reviews[index];
+                          return Card(
+                            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            child: ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: Colors.blue[100],
+                                child: Text(
+                                  review.userNickname.isNotEmpty 
+                                      ? review.userNickname[0].toUpperCase()
+                                      : 'U',
+                                  style: TextStyle(
+                                    color: Colors.blue[700],
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              title: Text(
+                                review.userNickname.isNotEmpty 
+                                    ? review.userNickname 
+                                    : '익명 사용자',
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const SizedBox(height: 4),
+                                  Text(review.text),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      // 별점 표시
+                                      ...List.generate(5, (starIndex) {
+                                        return Icon(
+                                          starIndex < review.rating 
+                                              ? Icons.star 
+                                              : Icons.star_border,
+                                          color: Colors.amber,
+                                          size: 16,
+                                        );
+                                      }),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        review.createdAt,
+                                        style: TextStyle(
+                                          color: Colors.grey[600],
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  // 사진이 있으면 표시
+                                  if (review.photoUrls.isNotEmpty) ...[
+                                    const SizedBox(height: 8),
+                                    SizedBox(
+                                      height: 60,
+                                      child: ListView.builder(
+                                        scrollDirection: Axis.horizontal,
+                                        itemCount: review.photoUrls.length,
+                                        itemBuilder: (context, photoIndex) {
+                                          return Container(
+                                            margin: const EdgeInsets.only(right: 8),
+                                            width: 60,
+                                            decoration: BoxDecoration(
+                                              borderRadius: BorderRadius.circular(8),
+                                              image: DecorationImage(
+                                                image: NetworkImage(review.photoUrls[photoIndex]),
+                                                fit: BoxFit.cover,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+                
+                const SizedBox(height: 20),
+                
+                // 리뷰 작성 버튼
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      _showReviewWriteDialog();
+                    },
+                    icon: const Icon(Icons.edit, color: Colors.white),
+                    label: const Text(
+                      '리뷰 작성하기',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue[600],
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // 리뷰 작성 다이얼로그
+  void _showReviewWriteDialog() {
+    final TextEditingController textController = TextEditingController();
+    int selectedRating = 5;
+    
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('리뷰 작성'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('이 쉼터에 대한 리뷰를 작성해주세요.'),
+              const SizedBox(height: 16),
+              
+              // 별점 선택
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('별점: '),
+                  ...List.generate(5, (index) {
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          selectedRating = index + 1;
+                        });
+                      },
+                      child: Icon(
+                        index < selectedRating ? Icons.star : Icons.star_border,
+                        color: Colors.amber,
+                        size: 24,
+                      ),
+                    );
+                  }),
+                ],
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // 리뷰 텍스트
+              TextField(
+                controller: textController,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  labelText: '리뷰 내용',
+                  hintText: '이 쉼터에 대한 솔직한 리뷰를 작성해주세요.',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('취소'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final text = textController.text.trim();
+                if (text.isNotEmpty) {
+                  Navigator.of(context).pop();
+                  _submitReview(text, selectedRating);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('리뷰 내용을 입력해주세요.'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                }
+              },
+              child: const Text('작성'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 리뷰 제출
+  Future<void> _submitReview(String text, int rating) async {
+    try {
+      final reviewData = {
+        'text': text,
+        'rating': rating,
+        'photoUrls': [], // 사진 기능은 나중에 추가
+      };
+      
+      // TODO: 실제 API 호출
+      // await ReviewService.createReview(_localSelectedShelter!.id, reviewData);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${_localSelectedShelter!.name}에 리뷰를 작성했습니다!'),
+          backgroundColor: Colors.green[600],
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      
+      // 리뷰 목록 새로고침
+      context.read<ReviewProvider>().fetchReviews(_localSelectedShelter!.id);
+      
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('리뷰 작성에 실패했습니다: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   @override
@@ -243,111 +579,379 @@ class _MapSectionState extends State<MapSection> with TickerProviderStateMixin {
         }
         
         // 실제 쉘터 데이터로 지도 표시
-        return FlutterMap(
-          mapController: _mapController,
-          options: MapOptions(
-            center: const LatLng(37.5665, 126.9780), // 서울 중심
-            zoom: 11.0, // 초기 줌 레벨
-            minZoom: 5.0, // 최소 줌
-            maxZoom: 18.0, // 최대 줌
-            onMapReady: () {
-              print('️ Map is ready!');
-            },
-          ),
+        return Stack(
           children: [
-            // OpenStreetMap 타일 레이어
-            TileLayer(
-              urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-              subdomains: ['a', 'b', 'c'],
-              userAgentPackageName: 'com.example.not_hotspot',
-              maxZoom: 19,
-            ),
-            
-            // 쉼터 마커 레이어
-            MarkerLayer(
-              markers: shelterProvider.shelters.map((shelter) {
-                return Marker(
-                  point: LatLng(shelter.latitude, shelter.longitude),
-                  child: GestureDetector( // builder 대신 child 사용
-                    onTap: () => _showShelterModal(shelter),
-                    child: Icon(
-                      Icons.location_on,
-                      color: Colors.red,
-                      size: 30,
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-            
-            // 현재 위치 마커 (있는 경우)
-            if (_currentPosition != null)
-              MarkerLayer(
-                markers: [
-                  Marker(
-                    point: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
-                    width: 30,
-                    height: 30,
-                    child: Container(
-                      decoration: const BoxDecoration(
-                        color: Colors.blue,
-                        shape: BoxShape.circle,
-                        border: Border.fromBorderSide(
-                          BorderSide(color: Colors.white, width: 3),
+            FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                center: const LatLng(37.5665, 126.9780), // 서울 중심
+                zoom: 11.0, // 초기 줌 레벨
+                minZoom: 5.0, // 최소 줌
+                maxZoom: 18.0, // 최대 줌
+                onMapReady: () {
+                  print('Map is ready!');
+                },
+              ),
+              children: [
+                // OpenStreetMap 타일 레이어
+                TileLayer(
+                  urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                  subdomains: ['a', 'b', 'c'],
+                  userAgentPackageName: 'com.example.not_hotspot',
+                  maxZoom: 19,
+                ),
+                
+                // 쉼터 마커 레이어
+                MarkerLayer(
+                  markers: shelterProvider.shelters.map((shelter) {
+                    return Marker(
+                      point: LatLng(shelter.latitude, shelter.longitude),
+                      child: GestureDetector(
+                        onTap: () => _showShelterModal(shelter),
+                        child: Icon(
+                          Icons.location_on,
+                          color: Colors.red,
+                          size: 30,
                         ),
                       ),
-                      child: const Icon(
-                        Icons.my_location,
-                        color: Colors.white,
-                        size: 16,
+                    );
+                  }).toList(),
+                ),
+                
+                // 현재 위치 마커 (있는 경우)
+                if (_currentPosition != null)
+                  MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+                        width: 30,
+                        height: 30,
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            color: Colors.blue,
+                            shape: BoxShape.circle,
+                            border: Border.fromBorderSide(
+                              BorderSide(color: Colors.white, width: 3),
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.my_location,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
                       ),
+                    ],
+                  ),
+              ],
+            ),
+            
+            // 쉼터 상세 정보 모달 (지도 위에 겹쳐서 표시)
+            if (_localSelectedShelter != null)
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: SlideTransition(
+                  position: _modalSlideAnimation,
+                  child: FadeTransition(
+                    opacity: _modalFadeAnimation,
+                    child: Container(
+                      margin: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // 모달 헤더
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.blue[50],
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(16),
+                                topRight: Radius.circular(16),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.location_on,
+                                  color: Colors.blue[700],
+                                  size: 24,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    _localSelectedShelter!.name,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                ),
+                                IconButton(
+                                  onPressed: _closeModal,
+                                  icon: const Icon(Icons.close),
+                                  color: Colors.grey[600],
+                                ),
+                              ],
+                            ),
+                          ),
+                          
+                          // 모달 내용
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // 왼쪽: 상세 정보
+                                Expanded(
+                                  flex: 2,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      _buildInfoRow('📍 주소', _localSelectedShelter!.address),
+                                      _buildInfoRow('🏃 거리', '${_localSelectedShelter!.distance.toStringAsFixed(1)}km'),
+                                      _buildInfoRow('🚦 상태', _localSelectedShelter!.status),
+                                      _buildInfoRow('👥 혼잡도', _localSelectedShelter!.predictedCongestion),
+                                    ],
+                                  ),
+                                ),
+                                
+                                // 오른쪽: 액션 버튼들
+                                Expanded(
+                                  flex: 1,
+                                  child: Column(
+                                    children: [
+                                      // 좋아요 토글 버튼
+                                      Consumer<ShelterProvider>(
+                                        builder: (context, shelterProvider, child) {
+                                          final isLiked = shelterProvider.isLiked(_localSelectedShelter!.id);
+                                          
+                                          return SizedBox(
+                                            width: double.infinity,
+                                            child: ElevatedButton.icon(
+                                              onPressed: () {
+                                                shelterProvider.toggleLike(_localSelectedShelter!.id);
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(
+                                                      isLiked 
+                                                        ? '${_localSelectedShelter!.name} 좋아요를 해제했습니다.'
+                                                        : '${_localSelectedShelter!.name}에 좋아요를 눌렀습니다!'
+                                                    ),
+                                                    duration: const Duration(seconds: 1),
+                                                    backgroundColor: isLiked ? Colors.grey[600] : Colors.red[400],
+                                                  ),
+                                                );
+                                              },
+                                              icon: Icon(
+                                                isLiked ? Icons.favorite : Icons.favorite_border,
+                                                color: isLiked ? Colors.white : Colors.red[400],
+                                                size: 18,
+                                              ),
+                                              label: Text(
+                                                isLiked ? '좋아요 해제' : '좋아요',
+                                                style: TextStyle(
+                                                  color: isLiked ? Colors.white : Colors.red[400],
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: isLiked ? Colors.red[400] : Colors.white,
+                                                foregroundColor: isLiked ? Colors.white : Colors.red[400],
+                                                side: isLiked ? null : BorderSide(color: Colors.red[300]!, width: 1),
+                                                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(6),
+                                                ),
+                                                elevation: isLiked ? 2 : 0,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                      
+                                      const SizedBox(height: 8),
+                                      
+                                      // 리뷰 보러가기 버튼
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: OutlinedButton.icon(
+                                          onPressed: () {
+                                            _showReviewModal();
+                                          },
+                                          icon: Icon(
+                                            Icons.rate_review,
+                                            color: Colors.blue[600],
+                                            size: 16,
+                                          ),
+                                          label: Text(
+                                            '리뷰',
+                                            style: TextStyle(
+                                              color: Colors.blue[600],
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                          style: OutlinedButton.styleFrom(
+                                            foregroundColor: Colors.blue[600],
+                                            side: BorderSide(color: Colors.blue[300]!),
+                                            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      
+                                      const SizedBox(height: 8),
+                                      
+                                      // 체크인 버튼
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: ElevatedButton.icon(
+                                          onPressed: () {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text('${_localSelectedShelter!.name} 체크인 기능은 준비 중입니다.'),
+                                                backgroundColor: Colors.green[600],
+                                                duration: const Duration(seconds: 2),
+                                              ),
+                                            );
+                                          },
+                                          icon: Icon(
+                                            Icons.camera_alt,
+                                            color: Colors.white,
+                                            size: 16,
+                                          ),
+                                          label: const Text(
+                                            '체크인',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.green[600],
+                                            foregroundColor: Colors.white,
+                                            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                            elevation: 2,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            
+            
+            // 지도 컨트롤 버튼들
+            Positioned(
+              top: 16,
+              right: 16,
+              child: Column(
+                children: [
+                  // 현재 위치 버튼
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: IconButton(
+                      onPressed: _isLoadingLocation ? null : _moveToCurrentLocation,
+                      icon: _isLoadingLocation 
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.my_location),
+                      color: Colors.blue[600],
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 8),
+                  
+                  // 줌 인 버튼
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: IconButton(
+                      onPressed: _zoomIn,
+                      icon: const Icon(Icons.add),
+                      color: Colors.blue[600],
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 8),
+                  
+                  // 줌 아웃 버튼
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: IconButton(
+                      onPressed: _zoomOut,
+                      icon: const Icon(Icons.remove),
+                      color: Colors.blue[600],
                     ),
                   ),
                 ],
               ),
+            ),
           ],
         );
       },
     );
-  }
-
-  // 쉼터 마커 생성
-  List<Marker> _buildShelterMarkers() {
-    final shelters = context.read<ShelterProvider>().shelters;
-    final List<Marker> markers = [];
-    
-    for (final shelter in shelters) {
-      markers.add(
-        Marker(
-          point: LatLng(shelter.latitude, shelter.longitude), // 실제 좌표에 고정
-          width: 40, // 마커 크기 40
-          height: 40,
-          child: GestureDetector(
-            onTap: () => _showShelterModal(shelter),
-            child: Container(
-              decoration: const BoxDecoration(
-                color: Colors.red, // 빨간색 마커
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 8,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.location_on,
-                color: Colors.white,
-                size: 24,
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-    
-    return markers;
   }
 
   Widget _buildInfoRow(String label, String value) {

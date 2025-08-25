@@ -37,7 +37,7 @@ class ShelterProvider with ChangeNotifier {
         lat: lat,
         lng: lng,
         // 거리 제한 없음 - 모든 쉼터 가져오기
-        // distance: 10.0, // 10km 제한을 원한다면 이 줄을 활성화
+        distance: 1000.0, // 10km 제한을 원한다면 이 줄을 활성화
       );
       
       print('📡 API 응답 상태: ${response['success']}');
@@ -130,29 +130,24 @@ class ShelterProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // 좋아요 상태를 저장하는 Set
+  Set<String> _likedShelters = {};
+  Set<String> get likedShelters => _likedShelters;
+
+  // 좋아요 상태 확인
+  bool isLiked(String shelterId) {
+    return _likedShelters.contains(shelterId);
+  }
+
+  // 좋아요 토글
   void toggleLike(String shelterId) {
-    final index = _shelters.indexWhere((shelter) => shelter.id == shelterId);
-    if (index != -1) {
-      final shelter = _shelters[index];
-      _shelters[index] = Shelter(
-        id: shelter.id,
-        name: shelter.name,
-        address: shelter.address,
-        distance: shelter.distance, // 필수 파라미터 추가
-        status: shelter.status,
-        predictedCongestion: shelter.predictedCongestion,
-        latitude: shelter.latitude,
-        longitude: shelter.longitude,
-        // 선택적 파라미터들
-        openingDays: shelter.openingDays,
-        maxCapacity: shelter.maxCapacity,
-        facilities: shelter.facilities,
-        rating: shelter.rating,
-        likes: shelter.likes + 1, // 좋아요 수 증가
-        imageUrl: shelter.imageUrl,
-        congestion: shelter.congestion,
-      );
-      _applyFilters();
+    if (_likedShelters.contains(shelterId)) {
+      _likedShelters.remove(shelterId);
+      print('❤️ 좋아요 해제: $shelterId');
+    } else {
+      _likedShelters.add(shelterId);
+      print('❤️ 좋아요 추가: $shelterId');
     }
+    notifyListeners();
   }
 }

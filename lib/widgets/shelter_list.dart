@@ -366,8 +366,9 @@ class ShelterListItem extends StatelessWidget {
               Expanded(
                 child: ElevatedButton(
                   onPressed: () {
+                    print('🏠 상세보기 버튼 클릭: ${shelter.name}');
                     // 상세 정보 보기 - 지도에 모달 표시
-                    onTap(); // onShelterSelected 대신 onTap 사용
+                    onTap(); // 이 함수가 MapSection의 _showShelterModal을 호출해야 함
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text('${shelter.name} 상세 정보를 지도에서 확인합니다.'),

@@ -43,6 +43,8 @@ dependencies:
   webview_flutter_web: ^0.2.2+4
   flutter_map: ^6.1.0
   latlong2: ^0.9.0
+  camera: ^0.10.5+9
+  image_picker: ^1.0.7
   
 dev_dependencies:
   flutter_test:

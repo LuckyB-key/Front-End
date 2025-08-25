@@ -28,9 +28,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onShelterSelected(Shelter shelter) {
+    print('🏠 쉼터 선택됨: ${shelter.name}');
     setState(() {
       selectedShelter = shelter;
     });
+    
+    // MapSection에 전달
+    print('️ MapSection에 선택된 쉼터 전달');
   }
 
   @override
@@ -57,7 +61,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       Expanded(
                         flex: 1,
                         child: ShelterList(
-                          onShelterSelected: _onShelterSelected,
+                          onShelterSelected: _onShelterSelected, // 콜백 함수 전달
                         ),
                       ),
 
@@ -65,8 +69,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       Expanded(
                         flex: 2,
                         child: MapSection(
-                          selectedShelter: selectedShelter,
+                          selectedShelter: selectedShelter, // 선택된 쉼터 전달
                           onShelterDeselected: () {
+                            print('❌ 쉼터 선택 해제');
                             setState(() {
                               selectedShelter = null;
                             });
