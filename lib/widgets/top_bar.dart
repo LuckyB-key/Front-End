@@ -88,36 +88,7 @@ class TopBar extends StatelessWidget {
           
           const SizedBox(width: 24),
           
-          // 필터 버튼들
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                '필요시 필터 추가',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey,
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: 400, // 필터 버튼 영역의 너비 제한
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _buildFilterButton('Filter 1'),
-                    _buildFilterButton('Filter 2'),
-                    _buildFilterButton('Filter 3'),
-                    _buildFilterButton('Filter 4'),
-                  ],
-                ),
-              ),
-            ],
-          ),
-
-          // 새로고침 버튼 추가
+          // 새로고침 버튼
           IconButton(
             onPressed: () {
               context.read<ShelterProvider>().fetchShelters();
@@ -130,29 +101,5 @@ class TopBar extends StatelessWidget {
     );
   }
 
-  Widget _buildFilterButton(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.blue[50],
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.blue[200]!),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.add, size: 16, color: Colors.blue),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.blue,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
 }
